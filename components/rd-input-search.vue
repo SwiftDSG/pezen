@@ -4,7 +4,7 @@
     :class="input.type ? `rd-input-component-${input.type}` : ''"
   >
     <div class="rd-input-icon-container">
-      <rd-svg :name="'magnify'" :color="'secondary'" />
+      <rd-svg :name="'magnify'" />
     </div>
     <input
       type="text"

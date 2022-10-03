@@ -1,11 +1,27 @@
 <template>
   <div class="rd-layout" ref="rdLayout">
-    <header v-if="viewMode === 'mobile'" class="rd-header" ref="rdHeader">
-      <rd-input-button-small class="rd-search-cancel" icon="arrow-left" />
+    <header
+      v-if="viewMode === 'mobile'"
+      class="rd-header"
+      ref="rdHeader"
+      :class="`${
+        !searchVisible && panelOpened !== 'search' ? 'rd-header-hidden' : ''
+      } ${panelOpened === 'search' ? 'rd-header-searching' : ''}`"
+    >
+      <rd-input-button-small
+        class="rd-search-cancel"
+        icon="arrow-left"
+        @clicked="panelHandler({ state: 'hide' })"
+      />
       <rd-input-search class="rd-search" :input="searchInput" />
       <rd-input-button-small class="rd-profile" image="/user-default.svg" />
     </header>
-    <header v-else class="rd-header" ref="rdHeader">
+    <header
+      v-else
+      class="rd-header"
+      ref="rdHeader"
+      :class="scrollValue > 0 ? 'rd-header-active' : ''"
+    >
       <div class="rd-greet-container">
         <rd-input-button-small class="rd-profile" image="/user-default.svg" />
         <div class="rd-greet">
@@ -19,16 +35,73 @@
       </div>
     </header>
     <main class="rd-body">
-      <nuxt-page />
+      <nuxt-page @shake="shake" @open-panel="panelHandler" />
     </main>
-    <nav class="rd-navigation"></nav>
+    <nav class="rd-navigation">
+      <a
+        v-for="link in navigationLinks"
+        :key="link.to"
+        :class="route.path === link.to ? 'rd-navigation-button-active' : ''"
+        :href="link.to"
+        class="rd-navigation-button"
+      >
+        <div class="rd-navigation-button-icon-container">
+          <rd-svg
+            class="rd-navigation-button-icon"
+            :name="link.icon"
+            :color="route.path === link.to ? 'primary' : 'secondary'"
+          />
+        </div>
+        <span class="rd-navigation-button-label rd-headline-6">{{
+          link.name
+        }}</span>
+        <span class="rd-navigation-button-indicator"></span>
+      </a>
+    </nav>
+    <rd-addresses-panel
+      v-if="panelOpened === 'addresses'"
+      :state="'idle'"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
+    />
+    <rd-search-panel
+      v-if="panelOpened === 'search'"
+      :state="'idle'"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+  import { ComputedRef } from "vue";
+
   import { InputSearchOption } from "./interfaces/general";
 
-  const { viewMode } = useMain();
+  interface PanelHandlerOption {
+    state: "show" | "hide";
+    type?: PanelType;
+    data?: any;
+  }
+  interface NavigationLink {
+    name: string;
+    to: string;
+    icon: string;
+  }
+
+  type PanelType = "addresses" | "addresses-add" | "search";
+
+  const { initSocket } = useSockets();
+  const { searchData, viewMode, loadPermissions, getSearchData } = useMain();
+  const route = useRoute();
+
+  const scrollValue = ref<number>(0);
+
+  const searchFocused = ref<boolean>(false);
+  const searchTimeout = ref<NodeJS.Timeout>(null);
+
+  const rdLayout = ref<HTMLDivElement>(null);
+  const rdHeader = ref<HTMLElement>(null);
 
   const searchInput = ref<InputSearchOption>({
     name: "query",
@@ -37,9 +110,88 @@
     type: "secondary",
   });
 
+  const panelState = ref<"idle" | "hide">("idle");
+  const panelData = ref<any[]>([]);
+  const panelOpened = ref<PanelType>(null);
+  const panelSequence = ref<PanelType[]>([]);
+
+  const searchVisible: ComputedRef<boolean> = computed(
+    () => route.path !== "/"
+  );
+  const searchQuery: ComputedRef<string> = computed(
+    () => searchInput.value.model
+  );
+
+  const navigationLinks: NavigationLink[] = [
+    {
+      name: "Home",
+      to: "/",
+      icon: "home",
+    },
+    {
+      name: "Pesanan",
+      to: "/orders",
+      icon: "timer",
+    },
+    {
+      name: "profile",
+      to: "/profile",
+      icon: "account",
+    },
+  ];
+
+  function shake(): void {
+    rdLayout.value.classList.add("rd-layout-shake");
+    setTimeout(() => {
+      rdLayout.value.classList.remove("rd-layout-shake");
+    }, 500);
+  }
+
   function resizeHandler(e: MediaQueryList | MediaQueryListEvent): void {
     if (e.matches) viewMode.value = "mobile";
     else viewMode.value = "desktop";
+  }
+  function panelHandler({ state, type, data }: PanelHandlerOption): void {
+    if (state === "show") {
+      panelSequence.value.unshift(type);
+      if (panelSequence.value.length === 1) {
+        panelState.value = "idle";
+        panelData.value.unshift(data);
+        panelOpened.value = panelSequence.value[0];
+        console.log(panelOpened.value);
+      } else {
+        panelState.value = "hide";
+        setTimeout(() => {
+          panelData.value.unshift(data);
+          panelOpened.value = panelSequence.value[0];
+        }, 250);
+      }
+      if (type === "search") {
+        const rdInput: HTMLInputElement =
+          rdHeader.value.querySelector("input.rd-input");
+        if (rdInput) rdInput.focus();
+      }
+    } else {
+      panelOpened.value = null;
+      if (panelState.value === "hide") {
+        panelState.value = "idle";
+        if (panelSequence.value[0] === panelSequence.value[1]) {
+          panelData.value.splice(1, 1);
+          panelSequence.value.splice(1, 1);
+        }
+      } else {
+        panelData.value.splice(0, 1);
+        panelSequence.value.splice(0, 1);
+        if (panelSequence.value[0]) {
+          setTimeout(() => {
+            panelOpened.value = panelSequence.value[0];
+          }, 50);
+        }
+      }
+    }
+  }
+  function scrollHandler(): void {
+    scrollValue.value = document.documentElement.scrollTop;
   }
 
   watch(
@@ -49,10 +201,31 @@
     }
   );
 
+  watch(
+    () => searchQuery.value,
+    (val) => {
+      clearTimeout(searchTimeout.value);
+      if (val.length >= 3) {
+        searchTimeout.value = setTimeout(() => {
+          getSearchData({
+            text: val,
+          });
+        }, 500);
+      } else {
+        searchData.value = null;
+      }
+    }
+  );
+
   onMounted(async () => {
     const mediaQuery: MediaQueryList = window.matchMedia("(max-width: 1024px)");
     mediaQuery.addEventListener("change", resizeHandler);
     resizeHandler(mediaQuery);
+
+    document.addEventListener("scroll", scrollHandler);
+
+    loadPermissions();
+    initSocket();
   });
 </script>
 
@@ -77,7 +250,7 @@
       box-shadow: 1px 0 0 0 rgba(170, 113, 156, 0.1);
       transition: background-color 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
         box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
-        transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+        transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1),
         opacity 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
       display: flex;
       align-items: center;
@@ -99,6 +272,96 @@
         position: absolute;
         top: 1rem;
         right: 1rem;
+      }
+      &.rd-header-searching {
+        box-shadow: var(--box-shadow);
+        background: #fff;
+        .rd-search-cancel {
+          opacity: 1;
+        }
+        .rd-search {
+          transform: translateX(2.5rem);
+        }
+        .rd-profile {
+          opacity: 0;
+        }
+      }
+      &.rd-header-active {
+        box-shadow: var(--box-shadow);
+        background: #fff;
+      }
+      &.rd-header-hidden {
+        transform: translateY(-125%);
+        opacity: 0;
+        transition: background-color 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+          box-shadow 0.25s cubic-bezier(0.25, 0.8, 0.25, 1),
+          transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1),
+          opacity 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+    }
+    nav.rd-navigation {
+      z-index: 10;
+      position: fixed;
+      bottom: 1rem;
+      left: 1rem;
+      width: calc(100vw - 2rem);
+      height: 2.5rem;
+      background: rgba(43, 25, 6, 0.5);
+      backdrop-filter: blur(10px);
+      border-radius: 0.75rem;
+      transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .rd-navigation-button {
+        cursor: pointer;
+        position: relative;
+        width: calc(100% / 3);
+        height: 100%;
+        text-decoration: none;
+        overflow: hidden;
+        color: #fff;
+        opacity: 0.5;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        .rd-navigation-button-icon-container {
+          position: relative;
+          width: 1rem;
+          height: 1rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          .rd-navigation-button-icon {
+            position: relative;
+            width: 100%;
+            height: 100%;
+          }
+        }
+        span.rd-navigation-button-label {
+          position: relative;
+          line-height: 1;
+          margin-top: 0.125rem;
+        }
+        .rd-navigation-button-indicator {
+          position: absolute;
+          bottom: 0;
+          left: calc(50% - 0.375rem);
+          height: 3px;
+          width: 0.75rem;
+          border-top-left-radius: 3px;
+          border-top-right-radius: 3px;
+          background: var(--primary-color);
+          transition: 0.2s transform;
+          transform: translateY(100%);
+        }
+        &.rd-navigation-button-active {
+          opacity: 1;
+          .rd-navigation-button-indicator {
+            transform: translateY(0);
+          }
+        }
       }
     }
     @media only screen and (min-width: 1025px) {
@@ -135,9 +398,17 @@
           justify-content: space-between;
           align-items: center;
           .rd-search {
-            width: 12.5rem;
+            width: calc(25vw - 4.25rem);
             margin-right: 0.5rem;
           }
+        }
+      }
+      nav.rd-navigation {
+        left: 50%;
+        width: 12rem;
+        transform: translateX(-50%);
+        &.rd-navigation-hidden {
+          transform: translateX(-50%) translateY(4.5rem);
         }
       }
     }
@@ -147,6 +418,7 @@
 <style lang="scss">
   :root {
     --primary-color: #ffa84c;
+    --secondary-color: #fff;
     --error-color: #ff584c;
     --warning-color: #ffc904;
     --success-color: #6bc785;
@@ -260,5 +532,55 @@
   p {
     margin: 0;
     padding: 0;
+  }
+
+  @keyframes rd-loading {
+    0% {
+      left: 0;
+      right: 100%;
+    }
+    50% {
+      left: 0;
+      right: 0;
+    }
+    100% {
+      left: 100%;
+      right: 0;
+    }
+  }
+  @keyframes rd-shake {
+    0% {
+      transform: translate(1px, 1px);
+    }
+    10% {
+      transform: translate(-1px, -2px);
+    }
+    20% {
+      transform: translate(-3px, 0px);
+    }
+    30% {
+      transform: translate(3px, 2px);
+    }
+    40% {
+      transform: translate(1px, -1px);
+    }
+    50% {
+      transform: translate(-1px, 2px);
+    }
+    60% {
+      transform: translate(-3px, 1px);
+    }
+    70% {
+      transform: translate(3px, 1px);
+    }
+    80% {
+      transform: translate(-1px, -1px);
+    }
+    90% {
+      transform: translate(1px, 2px);
+    }
+    100% {
+      transform: translate(1px, -2px);
+    }
   }
 </style>

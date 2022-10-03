@@ -52,7 +52,7 @@
 
   const props = defineProps<{
     label: string;
-    type?: "primary" | "secondary" | "error";
+    type?: "primary" | "secondary" | "error" | "background";
     icon?: string;
     disabled?: boolean;
     loading?: boolean;
@@ -365,6 +365,14 @@
       .rd-input-label-container {
         label.rd-input-label {
           color: var(--primary-color);
+        }
+      }
+    }
+    &.rd-input-component-background {
+      background: var(--background-depth-one-color);
+      .rd-input-label-container {
+        label.rd-input-label {
+          color: var(--font-color);
         }
       }
     }

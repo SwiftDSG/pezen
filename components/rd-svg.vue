@@ -46,7 +46,7 @@
       height: 100%;
       &.rd-svg-filled {
         .rd-svg-filled-main {
-          fill: #fff;
+          fill: var(--font-color);
         }
         .rd-svg-filled-secondary {
           fill: var(--secondary-color);
@@ -54,7 +54,7 @@
       }
       &.rd-svg-outlined {
         .rd-svg-outlined-main {
-          stroke: #fff;
+          stroke: var(--font-color);
         }
         .rd-svg-outlined-secondary {
           stroke: var(--secondary-color);

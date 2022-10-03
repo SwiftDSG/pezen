@@ -1,4 +1,49 @@
+import { Restaurant } from "./restaurants"
+import { Menu, MenuPack } from "./menus";
+
 export type ViewMode = 'desktop' | 'mobile'
+
+export interface Subscription {
+  endpoint: string
+  uuid: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
+export interface Position {
+  position: {
+    lat: number
+    lng: number
+  }
+  name: string
+  address?: string
+}
+
+export interface HomeData {
+  menus: {
+    'dine-in'?: Menu[]
+    'pre-order'?: Menu[]
+    'pack'?: {
+      date: Date
+      items: MenuPack[]
+    }[]
+  }
+  restaurants: {
+    'reservable'?: Restaurant[]
+    'popular'?: Restaurant[]
+  }
+}
+
+export interface SearchData {
+  'restaurants': Restaurant[]
+  'menus': Menu[]
+  'menu-packs': {
+    date: Date
+    items: MenuPack[]
+  }[]
+}
 
 export interface InputFileOption {
   disabled: boolean;
@@ -27,7 +72,6 @@ export interface InputOption {
     value: string
   })[]
 }
-
 export interface InputSearchOption {
   name: string
   placeholder: string
@@ -49,11 +93,6 @@ export interface InputGeneric<T> {
     name: string
     value: string
   })[]
-}
-
-export interface ChartCashflow {
-  label: Date;
-  value: [number, number];
 }
 
 export interface UserRecord {

@@ -7,7 +7,7 @@
     :disabled="disabled"
   >
     <div v-if="icon" class="rd-input-icon-container">
-      <rd-svg :name="props.icon" :color="'secondary'" />
+      <rd-svg :name="props.icon" />
     </div>
     <div v-else class="rd-input-image-container">
       <img :src="image" class="rd-input-image" />
