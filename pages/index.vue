@@ -23,7 +23,16 @@
           })
         "
       />
-      <rd-input-button-small class="rd-search-code" icon="qr-code" />
+      <rd-input-button-small
+        class="rd-search-code"
+        icon="qr-code"
+        @clicked="
+          emits('open-panel', {
+            state: 'show',
+            type: 'scanner',
+          })
+        "
+      />
     </div>
     <div v-if="viewMode === 'mobile'" class="rd-mobile-column">
       <rd-geolocation-prompt

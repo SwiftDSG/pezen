@@ -36,7 +36,16 @@
       </div>
       <div class="rd-search-container">
         <rd-input-search class="rd-search" :input="searchInput" />
-        <rd-input-button-small class="rd-search-code" icon="qr-code" />
+        <rd-input-button-small
+          class="rd-search-code"
+          icon="qr-code"
+          @clicked="
+            panelHandler({
+              state: 'show',
+              type: 'scanner',
+            })
+          "
+        />
       </div>
     </header>
     <main class="rd-body">
@@ -78,6 +87,12 @@
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
     />
+    <rd-scanner-panel
+      v-if="panelOpened === 'scanner'"
+      :state="'idle'"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
+    />
   </div>
 </template>
 
@@ -97,7 +112,7 @@
     icon: string;
   }
 
-  type PanelType = "addresses" | "addresses-add" | "search";
+  type PanelType = "addresses" | "addresses-add" | "search" | "scanner";
 
   const { initSocket } = useSockets();
   const { user, refresh } = useUser();

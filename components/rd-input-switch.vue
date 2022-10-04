@@ -1,9 +1,14 @@
 <template>
-  <div class="rd-input-component">
+  <div
+    class="rd-input-component"
+    :class="input.disabled ? 'rd-input-component-disabled' : ''"
+  >
     <input
       type="checkbox"
       class="rd-input"
+      ref="rdInput"
       id="rd-input-checkbox"
+      :disabled="input.disabled"
       @change="updateModel"
     />
     <label for="rd-input-checkbox" class="rd-input-label">
@@ -35,8 +40,19 @@
     input: {
       options: [string, string];
       model: string;
+      disabled?: boolean;
     };
   }>();
+
+  const rdInput = ref<HTMLInputElement>(null);
+
+  watch(
+    () => props.input.model,
+    (val) => {
+      if (val === props.input.options[0]) rdInput.value.checked = false;
+      else rdInput.value.checked = true;
+    }
+  );
 
   function updateModel({ target }: InputEvent): void {
     if (target instanceof HTMLInputElement) {
@@ -153,6 +169,10 @@
           }
         }
       }
+    }
+    &.rd-input-component-disabled {
+      pointer-events: none;
+      opacity: 0.5;
     }
   }
 </style>

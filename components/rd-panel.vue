@@ -211,7 +211,7 @@
             transform: scale(1);
           }
           &::after {
-            opacity: 0.05;
+            opacity: 1;
           }
         }
         &::after {
@@ -221,7 +221,7 @@
           left: 0;
           width: 100%;
           height: 1px;
-          background: var(--font-color);
+          background: var(--border-color);
           opacity: 0;
           transition: 0.25s opacity;
         }
