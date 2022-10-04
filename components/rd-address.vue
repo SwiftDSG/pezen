@@ -55,6 +55,7 @@
     height: 3rem;
     border-radius: 0.75rem;
     border: var(--border);
+    background: var(--background-depth-one-color);
     padding-right: 0.75rem;
     box-sizing: border-box;
     overflow: hidden;

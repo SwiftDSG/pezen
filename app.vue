@@ -44,24 +44,24 @@
     </main>
     <nav
       class="rd-navigation"
-      :class="!searchVisible ? 'rd-navigation-hidden' : ''"
+      :class="!navigationVisible ? 'rd-navigation-hidden' : ''"
     >
       <a
         v-for="link in navigationLinks"
         :key="link.to"
         :class="route.path === link.to ? 'rd-navigation-button-active' : ''"
-        :href="link.to"
+        :href="link.to === '/profile' && !user ? '/auth' : link.to"
         class="rd-navigation-button"
       >
         <div class="rd-navigation-button-icon-container">
           <rd-svg
             class="rd-navigation-button-icon"
-            :name="link.icon"
+            :name="link.to === '/profile' && !user ? 'login' : link.icon"
             :color="route.path === link.to ? 'primary' : 'secondary'"
           />
         </div>
         <span class="rd-navigation-button-label rd-headline-6">{{
-          link.name
+          link.to === "/profile" && !user ? "Masuk" : link.name
         }}</span>
         <span class="rd-navigation-button-indicator"></span>
       </a>
@@ -100,6 +100,7 @@
   type PanelType = "addresses" | "addresses-add" | "search";
 
   const { initSocket } = useSockets();
+  const { user, refresh } = useUser();
   const { searchData, viewMode, loadPermissions, getSearchData } = useMain();
   const route = useRoute();
 
@@ -123,8 +124,13 @@
   const panelOpened = ref<PanelType>(null);
   const panelSequence = ref<PanelType[]>([]);
 
+  const navigationVisible: ComputedRef<boolean> = computed(
+    () => route.path !== "/auth"
+  );
   const searchVisible: ComputedRef<boolean> = computed(
-    () => route.path !== "/" && route.path !== "/auth"
+    () =>
+      (route.path !== "/" || viewMode.value === "desktop") &&
+      route.path !== "/auth"
   );
   const searchQuery: ComputedRef<string> = computed(
     () => searchInput.value.model
@@ -231,6 +237,8 @@
     resizeHandler(mediaQuery);
 
     document.addEventListener("scroll", scrollHandler);
+
+    await refresh();
 
     loadPermissions();
     initSocket();
@@ -456,7 +464,7 @@
     font-family: "Quicksand", -apple-system, BlinkMacSystemFont, sans-serif;
     color: var(--font-color);
     overflow-x: hidden;
-    @media only screen and (max-width: 1919px) and (min-width: 1600px) {
+    @media only screen and (max-width: 1900px) and (min-width: 1600px) {
       font-size: 22px;
     }
     @media only screen and (max-width: 1599px) and (min-width: 1480px) {

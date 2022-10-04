@@ -23,6 +23,7 @@ export default function () {
       } else {
         notificationPermission.value = 'default'
       }
+      localStorage.setItem('notification_permission', notificationPermission.value)
     }
     if (navigator.permissions) {
       const permission: PermissionStatus = await navigator.permissions.query({ name: 'geolocation' })
@@ -38,15 +39,32 @@ export default function () {
         }
       })
     }
-    const positionRaw: string = localStorage.getItem('position')
-    if (positionRaw) {
-      const { position, name, address }: Position = JSON.parse(positionRaw)
-      if (position && name)
-        positionSelected.value = {
-          address,
-          position,
-          name
-        }
+    localStorage.setItem('geolocation_permission', geolocationPermission.value)
+    if (geolocationPermission.value === 'granted') {
+      const { lat, lng } = await geolocate()
+      const address: string[] = await reverseGeocode({ lat, lng })
+      const name: string = address.reverse()[0];
+      positionCurrent.value = {
+        address: address.join(", "),
+        position: { lat, lng },
+        name,
+      }
+      setPosition({
+        address: address.join(", "),
+        position: { lat, lng },
+        name,
+      })
+    } else {
+      const positionRaw: string = localStorage.getItem('position')
+      if (positionRaw) {
+        const { position, name, address }: Position = JSON.parse(positionRaw)
+        if (position && name)
+          positionSelected.value = {
+            address,
+            position,
+            name
+          }
+      }
     }
   }
 

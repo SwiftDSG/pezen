@@ -2,6 +2,7 @@ import { CookieRef } from "nuxt/dist/app/composables";
 import { UserMin } from "~~/interfaces/users";
 
 export default function () {
+  const router = useRouter()
   const { setAlert } = useAlert()
   const { $fetch, $setDefaults } = useNuxtApp()
   const config = useRuntimeConfig()
@@ -49,12 +50,17 @@ export default function () {
       user.value = result.user
       return result.user
     } catch {
-      setAlert({
-        type: 'warning',
-        title: 'Sesi habis',
-        message: 'Silahkan login ulang'
-      })
-      logout()
+      if (rtkCookie.value || atkCookie.value) {
+        setAlert({
+          type: 'warning',
+          title: 'Sesi habis',
+          message: 'Silahkan login ulang'
+        })
+        logout()
+        router.push('/auth')
+      } else {
+        logout()
+      }
       return null
     }
   }

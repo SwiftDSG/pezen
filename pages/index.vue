@@ -5,8 +5,12 @@
       <rd-input-button-small class="rd-profile" image="/user-default.svg" />
     </div>
     <div v-if="viewMode === 'mobile'" class="rd-greet-container">
-      <h3 class="rd-greet-subtitle rd-subtitle-text">Selamat pagi</h3>
-      <h1 class="rd-greet-title rd-headline-2">Kemal Dwi Heldy</h1>
+      <h3 class="rd-greet-subtitle rd-subtitle-text">
+        {{ `Selamat ${time[hour]}` }}
+      </h3>
+      <h1 class="rd-greet-title rd-headline-2">
+        {{ user ? user.name : "Food Lovers" }}
+      </h1>
     </div>
     <div v-if="viewMode === 'mobile'" class="rd-search-container">
       <rd-input-search
@@ -183,6 +187,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { ComputedRef } from "vue";
   import { InputSearchOption } from "~~/interfaces/general";
 
   interface Navigation {
@@ -191,6 +196,7 @@
     to: string;
   }
 
+  const { user } = useUser();
   const { positionSelected, viewMode, homeData, getHomeData } = useMain();
   const emits = defineEmits(["open-panel"]);
 
@@ -223,6 +229,18 @@
       to: "",
     },
   ];
+
+  const hour: ComputedRef<number> = computed(() => {
+    const hour: number = new Date().getHours();
+    let i = 3;
+    if (hour >= 3 && hour < 11) i = 0;
+    else if (hour >= 11 && hour < 15) i = 1;
+    else if (hour >= 15 && hour < 18) i = 2;
+    else i = 3;
+    return i;
+  });
+
+  const time: string[] = ["pagi", "siang", "sore", "malam"];
 
   onMounted(() => {
     getHomeData();
@@ -352,6 +370,7 @@
         height: calc(100% - 2rem);
         padding: 0.75rem;
         border-radius: 0.75rem;
+        background: var(--background-depth-one-color);
         border: var(--border);
         box-sizing: border-box;
         margin-top: 2rem;

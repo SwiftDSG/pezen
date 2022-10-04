@@ -19,14 +19,30 @@
   const rdElementText = ref<string>("");
 
   onBeforeMount(async () => {
-    const data: Response = await fetch(`/icons/${props.name}.svg`);
-    rdElementText.value = await data.text();
+    await loadElementText();
   });
+
+  async function loadElementText(): Promise<boolean> {
+    try {
+      const data: Response = await fetch(`/icons/${props.name}.svg`);
+      rdElementText.value = await data.text();
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   watch(
     () => rdElementText.value,
     (val) => {
       rdComponent.value.innerHTML = val;
+    }
+  );
+
+  watch(
+    () => props.name,
+    () => {
+      loadElementText();
     }
   );
 </script>

@@ -195,15 +195,20 @@
 </template>
 
 <script lang="ts" setup>
-  import { create } from "domain";
+  import gsap from "gsap";
   import { ComputedRef } from "vue";
   import { InputCodeOption, InputOption } from "~~/interfaces/general";
-  import { UserMin } from "~~/interfaces/users";
 
+  definePageMeta({
+    middleware: ["no-auth"],
+  });
   const { errorHandler } = useMain();
   const { setAlert } = useAlert();
   const { login, sendVerificationCode, verifyEmail, createAccount } = useUser();
+  const router = useRouter();
   const emits = defineEmits(["shake"]);
+
+  const rdContainer = ref<HTMLDivElement>(null);
 
   const emailInput = ref<InputOption>({
     name: "email",
@@ -296,6 +301,27 @@
     () => regPasswordConfirmationInput.value.model
   );
 
+  const animate = {
+    init(rdContainer: HTMLElement): void {
+      const tl: GSAPTimeline = gsap.timeline();
+
+      tl.to(rdContainer, {
+        opacity: 1,
+        duration: 0.5,
+      });
+    },
+    exit(rdContainer: HTMLElement, cb?: () => void): void {
+      const tl: GSAPTimeline = gsap.timeline({
+        onComplete: cb,
+      });
+
+      tl.to(rdContainer, {
+        opacity: 0,
+        duration: 0.5,
+      });
+    },
+  };
+
   function submitHandler(e: Event): void {
     e.preventDefault();
     if (panelIndex.value === 0) userLogin();
@@ -309,14 +335,15 @@
       loadingLogin.value = true;
       setTimeout(async () => {
         try {
-          const user: UserMin = await login({
+          await login({
             email: email.value,
             password: password.value,
           });
           loadingLogin.value = false;
           errorLogin.value = "";
-          console.log(user);
-          // loginnnnn
+          animate.exit(rdContainer.value, () => {
+            router.push("/");
+          });
         } catch (e) {
           emits("shake");
           loadingLogin.value = false;
@@ -416,12 +443,10 @@
       immediate: true,
     }
   );
-  watch(
-    () => regCode.value,
-    (val) => {
-      console.log(val);
-    }
-  );
+
+  onMounted(() => {
+    animate.init(rdContainer.value);
+  });
 </script>
 
 <style lang="scss" scoped>
@@ -433,6 +458,7 @@
     height: 100vh;
     display: flex;
     justify-content: flex-end;
+    opacity: 0;
     .rd-background-image-container {
       position: absolute;
       top: 0;
