@@ -15,6 +15,7 @@ interface UserFinance {
 }
 
 export interface User {
+  _id: string
   order_id: string[]
   restaurant_id: string[]
   name: string
@@ -27,4 +28,12 @@ export interface User {
   create_date: Date
   finance: UserFinance
   subscription: Subscription[]
+}
+
+export interface UserMin {
+  _id: string
+  name: string
+  email: string
+  role: string
+  image_url?: string
 }

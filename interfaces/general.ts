@@ -72,13 +72,18 @@ export interface InputOption {
     value: string
   })[]
 }
+export interface InputCodeOption {
+  name: string
+  length: number
+  model: string
+  disabled?: boolean
+}
 export interface InputSearchOption {
   name: string
   placeholder: string
   model: string
   type?: 'primary' | 'secondary'
 }
-
 export interface InputGeneric<T> {
   name: string
   placeholder: string

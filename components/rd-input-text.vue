@@ -11,7 +11,7 @@
     }}</label>
     <div class="rd-input-container">
       <div v-if="props.input.icon" class="rd-input-icon-container">
-        <rd-svg :name="props.input.icon" :color="'secondary'" />
+        <rd-svg :name="props.input.icon" />
       </div>
       <input
         class="rd-input rd-body-text"
@@ -69,6 +69,7 @@
       }
     }
   }
+
   watch(
     () => props.input.model,
     (val) => {

@@ -1,12 +1,15 @@
 <template>
   <div class="rd-layout" ref="rdLayout">
+    <rd-alert />
     <header
       v-if="viewMode === 'mobile'"
       class="rd-header"
       ref="rdHeader"
       :class="`${
         !searchVisible && panelOpened !== 'search' ? 'rd-header-hidden' : ''
-      } ${panelOpened === 'search' ? 'rd-header-searching' : ''}`"
+      } ${panelOpened === 'search' ? 'rd-header-searching' : ''} ${
+        scrollValue > 0 ? 'rd-header-active' : ''
+      }`"
     >
       <rd-input-button-small
         class="rd-search-cancel"
@@ -20,7 +23,9 @@
       v-else
       class="rd-header"
       ref="rdHeader"
-      :class="scrollValue > 0 ? 'rd-header-active' : ''"
+      :class="`${scrollValue > 0 ? 'rd-header-active' : ''} ${
+        !searchVisible ? 'rd-header-hidden' : ''
+      }`"
     >
       <div class="rd-greet-container">
         <rd-input-button-small class="rd-profile" image="/user-default.svg" />
@@ -37,7 +42,10 @@
     <main class="rd-body">
       <nuxt-page @shake="shake" @open-panel="panelHandler" />
     </main>
-    <nav class="rd-navigation">
+    <nav
+      class="rd-navigation"
+      :class="!searchVisible ? 'rd-navigation-hidden' : ''"
+    >
       <a
         v-for="link in navigationLinks"
         :key="link.to"
@@ -116,7 +124,7 @@
   const panelSequence = ref<PanelType[]>([]);
 
   const searchVisible: ComputedRef<boolean> = computed(
-    () => route.path !== "/"
+    () => route.path !== "/" && route.path !== "/auth"
   );
   const searchQuery: ComputedRef<string> = computed(
     () => searchInput.value.model
@@ -363,6 +371,12 @@
           }
         }
       }
+      &.rd-navigation-hidden {
+        transform: translateY(150%);
+      }
+    }
+    &.rd-layout-shake {
+      animation: rd-shake 0.25s infinite;
     }
     @media only screen and (min-width: 1025px) {
       header.rd-header {
@@ -523,6 +537,118 @@
     transform: translateX(0.0625rem);
   }
 
+  span.rd-text-wrapper,
+  span.rd-word-wrapper,
+  span.rd-letter-wrapper,
+  span.rd-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    span.rd-text-container,
+    span.rd-word-container,
+    span.rd-letter-container,
+    span.rd-image-container {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      &.rd-text-container-up,
+      &.rd-word-container-up,
+      &.rd-letter-container-up,
+      &.rd-image-container-up {
+        transform: translateY(-100%);
+        span.rd-text,
+        span.rd-word,
+        span.rd-letter,
+        img.rd-image {
+          transform: translateY(100%);
+          &.rd-image:not(.rd-image-contain) {
+            transform: translateY(100%) scale(1.25);
+          }
+          &.rd-image-contain {
+            object-fit: contain;
+            transform: translateY(100%) scale(1);
+          }
+        }
+      }
+      &.rd-text-container-down,
+      &.rd-word-container-down,
+      &.rd-letter-container-down,
+      &.rd-image-container-down {
+        transform: translateY(100%);
+        span.rd-text,
+        span.rd-word,
+        span.rd-letter,
+        img.rd-image {
+          transform: translateY(-100%);
+          &.rd-image:not(.rd-image-contain) {
+            transform: translateY(-100%) scale(1.25);
+          }
+          &.rd-image-contain {
+            object-fit: contain;
+            transform: translateY(-100%) scale(1);
+          }
+        }
+      }
+      &.rd-text-container-left,
+      &.rd-word-container-left,
+      &.rd-letter-container-left,
+      &.rd-image-container-left {
+        transform: translateX(-100%);
+        span.rd-text,
+        span.rd-word,
+        span.rd-letter,
+        img.rd-image {
+          transform: translateX(100%);
+          &.rd-image:not(.rd-image-contain) {
+            transform: translateX(100%) scale(1.25);
+          }
+          &.rd-image-contain {
+            object-fit: contain;
+            transform: translateX(100%) scale(1);
+          }
+        }
+      }
+      &.rd-text-container-right,
+      &.rd-word-container-right,
+      &.rd-letter-container-right,
+      &.rd-image-container-right {
+        transform: translateX(100%);
+        span.rd-text,
+        span.rd-word,
+        span.rd-letter,
+        img.rd-image {
+          transform: translateX(-100%);
+          &.rd-image:not(.rd-image-contain) {
+            transform: translateX(-100%) scale(1.25);
+          }
+          &.rd-image-contain {
+            object-fit: contain;
+            transform: translateX(-100%) scale(1);
+          }
+        }
+      }
+    }
+  }
+  span.rd-image-wrapper {
+    width: 100%;
+    height: 100%;
+    span.rd-image-container {
+      width: 100%;
+      height: 100%;
+      img.rd-image {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.25);
+      }
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -581,6 +707,25 @@
     }
     100% {
       transform: translate(1px, -2px);
+    }
+  }
+  @keyframes rd-rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes rd-circular-rotate {
+    0% {
+      transform: rotate(0);
+    }
+    50% {
+      transform: rotate(-140deg);
+    }
+    100% {
+      transform: rotate(0);
     }
   }
 </style>

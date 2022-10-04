@@ -123,6 +123,28 @@ export default function () {
     }
   }
 
+  const errorHandler = (code: string): string => {
+    let message: string = ''
+    switch (code) {
+      case 'INVALID_COMBINATION':
+        message = 'Kombinasi email dan password salah'
+        break;
+      case 'INVALID_EMAIL':
+        message = 'Format email salah'
+        break;
+      case 'USER_ALREADY_EXIST':
+        message = 'Email tersebut sudah digunakan'
+        break;
+      case 'VERIFICATION_CODE_DID_NOT_MATCH':
+        message = 'Kode yang dimasukkan salah'
+        break;
+      default:
+        message = 'Terjadi masalah, silahkan coba lagi'
+        break;
+    }
+    return message
+  }
+
   return {
     viewMode,
     homeData,
@@ -137,6 +159,7 @@ export default function () {
     loadPermissions,
     geolocate,
     reverseGeocode,
-    setPosition
+    setPosition,
+    errorHandler
   }
 }

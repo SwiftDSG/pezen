@@ -1,4 +1,8 @@
+import { User } from "~~/interfaces/users"
+
 export default defineNuxtPlugin(() => {
+  const { refresh } = useUser()
+
   let config: RequestInit = {
     mode: 'cors',
     credentials: 'include',
@@ -20,6 +24,12 @@ export default defineNuxtPlugin(() => {
         if (body && body instanceof FormData) delete option.headers['Content-Type']
 
         let response: Response = await fetch(url, option)
+
+        if (response.status === 401) {
+          const user: User = await refresh()
+          console.log(user)
+          if (user) response = await fetch(url, option)
+        }
 
         return response
       }
