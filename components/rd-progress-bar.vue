@@ -23,6 +23,7 @@
     init(rdComponent: HTMLElement): void {
       const tl: GSAPTimeline = gsap.timeline();
       tl.to(rdComponent, {
+        pointerEvents: "auto",
         opacity: 1,
         scale: 1,
         duration: 0.25,
@@ -32,6 +33,7 @@
     exit(rdComponent: HTMLElement): void {
       const tl: GSAPTimeline = gsap.timeline();
       tl.to(rdComponent, {
+        pointerEvents: "none",
         opacity: 0,
         scale: 1.125,
         duration: 0.25,
@@ -67,8 +69,8 @@
     box-shadow: var(--box-shadow);
     opacity: 0;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: center !important;
+    align-items: center !important;
     transform: scale(0.875);
     overflow: hidden;
     .rd-progress-bar-outer {
@@ -98,9 +100,14 @@
       left: 0;
       width: 100%;
       height: 100%;
+      padding: 0 2rem;
+      border-radius: 0;
       background: rgba(0, 0, 0, 0.25);
       opacity: 0;
       transform: scale(1) !important;
+      .rd-progress-bar-outer {
+        max-width: 15rem;
+      }
       &::before {
         z-index: 0;
         content: "";

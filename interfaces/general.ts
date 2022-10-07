@@ -105,3 +105,13 @@ export interface UserRecord {
   name: string;
   role_id: string[];
 }
+
+export interface RestaurantMenuCategories {
+  category: string
+  menus: Menu[]
+}
+
+export interface RestaurantMenusResponse {
+  categories: RestaurantMenuCategories[]
+  packs?: MenuPack[]
+}

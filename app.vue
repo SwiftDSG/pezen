@@ -6,10 +6,14 @@
       class="rd-header"
       ref="rdHeader"
       :class="`${
-        !searchVisible && panelOpened !== 'search' ? 'rd-header-hidden' : ''
-      } ${panelOpened === 'search' ? 'rd-header-searching' : ''} ${
-        scrollValue > 0 ? 'rd-header-active' : ''
-      }`"
+        !searchVisible && !(panelOpened === 'search' && panelState === 'idle')
+          ? 'rd-header-hidden'
+          : ''
+      } ${
+        panelOpened === 'search' && panelState === 'idle'
+          ? 'rd-header-searching'
+          : ''
+      } ${scrollValue > 0 ? 'rd-header-active' : ''}`"
     >
       <rd-input-button-small
         class="rd-search-cancel"
@@ -31,7 +35,9 @@
         <rd-input-button-small class="rd-profile" image="/user-default.svg" />
         <div class="rd-greet">
           <h3 class="rd-greet-subtitle rd-subtitle-text">Selamat pagi</h3>
-          <h1 class="rd-greet-title rd-headline-2">Kemal Dwi Heldy</h1>
+          <h1 class="rd-greet-title rd-headline-2">
+            {{ user ? user.name : "Food Lovers!" }}
+          </h1>
         </div>
       </div>
       <div class="rd-search-container">
@@ -48,7 +54,7 @@
         />
       </div>
     </header>
-    <main class="rd-body">
+    <main class="rd-body" ref="rdBody">
       <nuxt-page @shake="shake" @open-panel="panelHandler" />
     </main>
     <nav
@@ -77,26 +83,28 @@
     </nav>
     <rd-addresses-panel
       v-if="panelOpened === 'addresses'"
-      :state="'idle'"
+      :state="panelState"
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
     />
     <rd-search-panel
       v-if="panelOpened === 'search'"
-      :state="'idle'"
+      :state="panelState"
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
     />
     <rd-scanner-panel
       v-if="panelOpened === 'scanner'"
-      :state="'idle'"
+      :state="panelState"
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
+      @change-page="changeHandler"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
+  import gsap from "gsap";
   import { ComputedRef } from "vue";
 
   import { InputSearchOption } from "./interfaces/general";
@@ -118,6 +126,7 @@
   const { user, refresh } = useUser();
   const { searchData, viewMode, loadPermissions, getSearchData } = useMain();
   const route = useRoute();
+  const router = useRouter();
 
   const scrollValue = ref<number>(0);
 
@@ -126,6 +135,7 @@
 
   const rdLayout = ref<HTMLDivElement>(null);
   const rdHeader = ref<HTMLElement>(null);
+  const rdBody = ref<HTMLDivElement>(null);
 
   const searchInput = ref<InputSearchOption>({
     name: "query",
@@ -140,12 +150,16 @@
   const panelSequence = ref<PanelType[]>([]);
 
   const navigationVisible: ComputedRef<boolean> = computed(
-    () => route.path !== "/auth"
+    () =>
+      route.path === "/" ||
+      route.path === "/orders" ||
+      route.path === "/profile"
   );
   const searchVisible: ComputedRef<boolean> = computed(
     () =>
-      (route.path !== "/" || viewMode.value === "desktop") &&
-      route.path !== "/auth"
+      (route.path === "/" && viewMode.value === "desktop") ||
+      route.path === "/orders" ||
+      route.path === "/profile"
   );
   const searchQuery: ComputedRef<string> = computed(
     () => searchInput.value.model
@@ -169,6 +183,27 @@
     },
   ];
 
+  const animate = {
+    exitPage(rdBody: HTMLElement, cb?: () => void): void {
+      const tl: GSAPTimeline = gsap.timeline({
+        onComplete() {
+          if (cb) cb();
+          setTimeout(() => {
+            gsap.to(rdBody, {
+              opacity: 1,
+              duration: 0,
+            });
+          }, 50);
+        },
+      });
+
+      tl.to(rdBody, {
+        opacity: 0,
+        duration: 0.5,
+      });
+    },
+  };
+
   function shake(): void {
     rdLayout.value.classList.add("rd-layout-shake");
     setTimeout(() => {
@@ -187,7 +222,6 @@
         panelState.value = "idle";
         panelData.value.unshift(data);
         panelOpened.value = panelSequence.value[0];
-        console.log(panelOpened.value);
       } else {
         panelState.value = "hide";
         setTimeout(() => {
@@ -201,7 +235,6 @@
         if (rdInput) rdInput.focus();
       }
     } else {
-      panelOpened.value = null;
       if (panelState.value === "hide") {
         panelState.value = "idle";
         if (panelSequence.value[0] === panelSequence.value[1]) {
@@ -209,6 +242,7 @@
           panelSequence.value.splice(1, 1);
         }
       } else {
+        panelState.value = "hide";
         panelData.value.splice(0, 1);
         panelSequence.value.splice(0, 1);
         if (panelSequence.value[0]) {
@@ -217,10 +251,18 @@
           }, 50);
         }
       }
+      setTimeout(() => {
+        panelOpened.value = null;
+      }, 500);
     }
   }
   function scrollHandler(): void {
     scrollValue.value = document.documentElement.scrollTop;
+  }
+  function changeHandler(to: string): void {
+    animate.exitPage(rdBody.value, () => {
+      router.push(to);
+    });
   }
 
   watch(
@@ -550,6 +592,8 @@
     font-size: 0.55rem;
     font-family: "Quicksand";
     font-weight: 500;
+    color: var(--font-color);
+    opacity: 0.5;
   }
   .rd-button-text {
     font-family: "Quicksand";

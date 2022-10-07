@@ -46,7 +46,13 @@
               <rd-input-text class="rd-panel-input" :input="tableInput" />
             </div>
             <div class="rd-panel-button-wrapper">
-              <rd-input-button class="rd-panel-button" label="masuk" />
+              <rd-input-button
+                class="rd-panel-button"
+                label="masuk"
+                :disabled="!code || !table"
+                :loading="loading"
+                @clicked="checkCode(code, table)"
+              />
             </div>
           </div>
         </div>
@@ -62,13 +68,14 @@
 
   import { InputOption, ViewMode } from "~~/interfaces/general";
 
+  const { checkRestaurant } = useRestaurants();
   const { setAlert } = useAlert();
   const { viewMode } = useMain();
   const props = defineProps<{
     state: "idle" | "hide";
     code?: string;
   }>();
-  const emits = defineEmits(["exit"]);
+  const emits = defineEmits(["exit", "change-page"]);
 
   const rdBackground = ref<HTMLDivElement>(null);
   const rdPanel = ref<HTMLDivElement>(null);
@@ -92,22 +99,32 @@
     name: "code",
     placeholder: "ABCDEF",
     model: "",
-    label: "Kode",
+    label: "Kode resto",
   });
   const tableInput = ref<InputOption>({
     name: "table",
     placeholder: "A01",
     model: "",
-    label: "Nomor Meja",
+    label: "Nomor meja",
   });
 
   const panelIndex: ComputedRef<number> = computed(() =>
     modeInput.value.model === "Scan QR" ? 0 : 1
   );
+  const code: ComputedRef<string> = computed(
+    () => props.code || codeInput.value.model
+  );
+  const table: ComputedRef<string> = computed(() => tableInput.value.model);
 
   const animate = {
-    init(rdBackground: HTMLElement, rdPanel: HTMLElement): void {
-      const tl: GSAPTimeline = gsap.timeline();
+    init(
+      rdBackground: HTMLElement,
+      rdPanel: HTMLElement,
+      cb?: () => void
+    ): void {
+      const tl: GSAPTimeline = gsap.timeline({
+        onComplete: cb,
+      });
 
       tl.to(rdBackground, {
         opacity: 1,
@@ -130,9 +147,7 @@
       cb?: () => void
     ): void {
       const tl: GSAPTimeline = gsap.timeline({
-        onComplete() {
-          if (cb) cb();
-        },
+        onComplete: cb,
       });
 
       tl.to(rdBackground, {
@@ -164,9 +179,10 @@
     },
   };
 
-  function exit(): void {
-    controls.value?.stop();
+  function exit(cb?: () => void): void {
     animate.exit(viewMode.value, rdBackground.value, rdPanel.value, () => {
+      if (cb) cb();
+      controls.value?.stop();
       emits("exit");
     });
   }
@@ -176,9 +192,15 @@
       controls.value = await scanner.value.decodeFromVideoDevice(
         cameras.value[1]?.deviceId || cameras.value[0].deviceId,
         rdPanelVideo.value,
-        (result, error) => {
-          console.log(result);
-          console.log(error);
+        (result) => {
+          if (result) {
+            const code: string[] = result
+              .getText()
+              .split("/")
+              .reverse()[0]
+              .split("?type=dine-in&table=");
+            checkCode(code[0], code[1]);
+          }
         }
       );
     } catch (e) {
@@ -189,6 +211,30 @@
       });
       modeInput.value.model = "Manual";
       modeInput.value.disabled = true;
+    }
+  }
+  async function checkCode(code: string, table: string): Promise<void> {
+    if (!loading.value) {
+      try {
+        loading.value = true;
+        await checkRestaurant({
+          code,
+          table,
+        });
+        exit(() => {
+          emits(
+            "change-page",
+            `/restaurants/${code}?type=dine-in&table=${table}`
+          );
+        });
+      } catch (e) {
+        loading.value = false;
+        setAlert({
+          type: "error",
+          title: "Kode tidak dikenali",
+          message: "Tidak bisa mengenali kode yang kamu berikan",
+        });
+      }
     }
   }
 
@@ -225,14 +271,14 @@
     }
   );
 
-  onMounted(async () => {
-    animate.init(rdBackground.value, rdPanel.value);
-
-    if (viewMode.value === "mobile") {
-      scanner.value = new BrowserQRCodeReader();
-      cameras.value = await BrowserQRCodeReader.listVideoInputDevices();
-      startScan();
-    }
+  onMounted(() => {
+    animate.init(rdBackground.value, rdPanel.value, async () => {
+      if (viewMode.value === "mobile") {
+        scanner.value = new BrowserQRCodeReader();
+        cameras.value = await BrowserQRCodeReader.listVideoInputDevices();
+        startScan();
+      }
+    });
   });
 </script>
 

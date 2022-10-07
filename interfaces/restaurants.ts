@@ -1,3 +1,8 @@
+interface RestaurantOpeningHour {
+  open: string
+  close: string
+}
+
 export type RestaurantType =
   'Cafe' |
   'Steakhouse' |
@@ -29,8 +34,16 @@ export interface Restaurant {
   code: string
   categories: number[]
   formatted_address: string[]
+  distance?: number
+  price_level?: number
+  address?: string
   logo_url?: string
   image_url?: string
+  opening_hours?: (RestaurantOpeningHour | 'closed' | 'opened')[]
+  position?: {
+    lat: number
+    lng: number
+  }
   rating?: {
     count: number
     value: number

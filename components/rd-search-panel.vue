@@ -39,6 +39,7 @@
     () => props.state,
     (val) => {
       if (val === "hide") panelState.value = "hide";
+      console.log(val);
     }
   );
   watch(
@@ -49,12 +50,6 @@
         setTimeout(() => {
           dataLoading.value = false;
         }, 500);
-    }
-  );
-  watch(
-    () => searchData.value,
-    (val) => {
-      console.log(val);
     }
   );
 </script>

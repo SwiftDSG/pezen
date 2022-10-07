@@ -18,12 +18,15 @@
       <span class="rd-address-name rd-headline-5">{{ data.name }}</span>
       <span class="rd-address-detail rd-caption-text">{{ data.address }}</span>
     </div>
-    <rd-progress-bar type="overlay" :state="loading ? 'show' : 'hide'" />
+    <rd-progress-bar
+      type="overlay"
+      :state="loading ? 'show' : 'hide'"
+      style="border-radius: 0.75rem"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-  import gsap from "gsap";
   import { Position } from "~~/interfaces/general";
 
   type AddressType = "prompt" | "current" | "home" | "office" | "apartment";
