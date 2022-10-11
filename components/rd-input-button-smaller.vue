@@ -111,13 +111,13 @@
   button.rd-input-component {
     cursor: pointer;
     position: relative;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 2rem;
+    height: 1rem;
     display: flex;
     border-radius: 0.5rem;
     margin: 0;
     background: var(--background-depth-one-color);
-    border: var(--border);
+    border: none;
     padding: 0;
     overflow: hidden;
     display: flex;
@@ -134,7 +134,7 @@
       align-items: center;
     }
     .rd-input-icon-container {
-      padding: 0 0.25rem;
+      padding: 0 0.625rem;
       box-sizing: border-box;
     }
     .rd-input-overlay {

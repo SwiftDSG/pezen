@@ -2,56 +2,18 @@
   <div class="rd-component" ref="rdComponent">
     <div class="rd-menu-image-container">
       <img :src="data.image_url || '/menu-default.svg'" class="rd-menu-image" />
-      <div v-if="data.make_duration" class="rd-menu-tag" style="top: -0.5rem">
-        <div class="rd-menu-tag-icon-container">
-          <rd-svg
-            class="rd-menu-tag-icon"
-            name="clock-outline"
-            color="secondary"
-          />
-        </div>
-        <span class="rd-menu-tag-name rd-headline-6">{{
-          `${data.make_duration} hari`
-        }}</span>
-      </div>
-      <div
-        v-if="data.eligible_promos"
-        class="rd-menu-tag rd-menu-tag-promo"
-        style="bottom: -0.5rem"
-      >
-        <div class="rd-menu-tag-icon-container">
-          <rd-svg
-            class="rd-menu-tag-icon"
-            name="alert-decagram"
-            color="secondary"
-          />
-        </div>
-        <span class="rd-menu-tag-name rd-headline-6">promo</span>
-      </div>
     </div>
     <div class="rd-menu-details-container">
       <div class="rd-menu-details">
         <span class="rd-menu-name rd-headline-5">{{ data.name }}</span>
-        <span
-          v-if="data.description"
-          class="rd-menu-description rd-caption-text"
-          >{{
-            `${data.description?.slice(0, viewMode === "mobile" ? 55 : 75)}...`
-          }}</span
-        >
-        <span
-          v-else
-          class="rd-menu-description rd-menu-description-empty rd-caption-text"
-          >Tidak ada deskripsi</span
-        >
+        <span class="rd-menu-price rd-caption-text">{{
+          `Rp ${(data.markup_price || data.price).toLocaleString("de-DE")}`
+        }}</span>
       </div>
-      <span class="rd-menu-price rd-headline-5">{{
-        `Rp ${(data.markup_price || data.price).toLocaleString("de-DE")}`
-      }}</span>
     </div>
     <div
       class="rd-menu-actions-container"
-      :class="cart ? 'rd-menu-actions-container-active' : ''"
+      :class="data ? 'rd-menu-actions-container-active' : ''"
     >
       <div class="rd-menu-action rd-menu-action-add">
         <rd-input-button-smaller icon="plus" @clicked="emits('add', data)" />
@@ -63,9 +25,8 @@
         />
       </div>
       <div class="rd-menu-action-main" @click="emits('add', data)">
-        <rd-svg v-if="!cart" name="plus" color="secondary" />
-        <span v-else class="rd-menu-action-main-quantity rd-headline-6">{{
-          cart.quantity
+        <span class="rd-menu-action-main-quantity rd-headline-6">{{
+          data.quantity
         }}</span>
       </div>
     </div>
@@ -73,12 +34,11 @@
 </template>
 
 <script lang="ts" setup>
-  import { Menu, MenuCart } from "~~/interfaces/menus";
+  import { MenuCart } from "~~/interfaces/menus";
 
   const { viewMode } = useMain();
   const props = defineProps<{
-    data: Menu;
-    cart?: MenuCart;
+    data: MenuCart;
   }>();
   const emits = defineEmits(["add", "subtract"]);
 </script>
@@ -87,20 +47,25 @@
   .rd-component {
     position: relative;
     width: 100%;
-    padding: 0.75rem;
+    height: calc(5.5rem + 2px) !important;
+    padding: 0.75rem !important;
     border: var(--border);
     background: var(--background-depth-one-color);
     border-radius: 0.75rem;
     box-sizing: border-box;
+    overflow: hidden !important;
     display: flex;
+    flex-direction: row !important;
     justify-content: space-between;
     .rd-menu-image-container {
+      pointer-events: none;
       position: relative;
       width: 4rem;
       height: 4rem;
       border-radius: 0.5rem;
       background: var(--background-depth-two-color);
       display: flex;
+      flex-shrink: 0;
       justify-content: center;
       align-items: center;
       img.rd-menu-image {
@@ -156,14 +121,16 @@
       }
     }
     .rd-menu-details-container {
+      pointer-events: none;
       position: relative;
-      width: calc(100% - 5.5rem);
+      width: calc(100% - 6rem);
       height: 4rem;
       padding: 0 0.75rem;
       box-sizing: border-box;
       display: flex;
+      flex-shrink: 0;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: center;
       .rd-menu-details {
         position: relative;
         width: 100%;
@@ -172,18 +139,10 @@
         span.rd-menu-name {
           position: relative;
         }
-        span.rd-menu-description {
+        span.rd-menu-price {
           position: relative;
-          width: 100%;
           margin-top: 0.125rem;
-          word-break: break-all;
-          &.rd-menu-description-empty {
-            font-style: italic;
-          }
         }
-      }
-      span.rd-menu-price {
-        position: relative;
       }
     }
     .rd-menu-actions-container {

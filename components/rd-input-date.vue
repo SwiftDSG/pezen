@@ -17,7 +17,6 @@
         ref="rdInput"
         readonly
         :name="props.input.name"
-        :type="props.input.type"
         @focusin="dropDownHandler('open')"
         @input="updateModel"
       />
@@ -107,7 +106,26 @@
         <div class="rd-input-date-weeks-wrapper">
           <div class="rd-input-date-weeks rd-input-date-weeks-prev">
             <div v-for="i in 6" :key="i" class="rd-input-date-week">
-              <div v-for="j in 7" :key="j" class="rd-input-date-week-day">
+              <div
+                v-for="j in 7"
+                :key="j"
+                class="rd-input-date-week-day"
+                :class="
+                  props.input.threshold
+                    ? isYesterday(
+                        selectedMonth.month === 0
+                          ? selectedMonth.year - 1
+                          : selectedMonth.year,
+                        selectedMonth.month === 0
+                          ? 11
+                          : selectedMonth.month - 1,
+                        prevDays[i - 1][j - 1]
+                      )
+                      ? 'rd-input-date-week-day-disabled'
+                      : ''
+                    : ''
+                "
+              >
                 <div
                   v-if="
                     isSameDay(
@@ -142,7 +160,22 @@
           </div>
           <div class="rd-input-date-weeks rd-input-date-weeks-current">
             <div v-for="i in 6" :key="i" class="rd-input-date-week">
-              <div v-for="j in 7" :key="j" class="rd-input-date-week-day">
+              <div
+                v-for="j in 7"
+                :key="j"
+                class="rd-input-date-week-day"
+                :class="
+                  props.input.threshold
+                    ? isYesterday(
+                        selectedMonth.year,
+                        selectedMonth.month,
+                        currentDays[i - 1][j - 1]
+                      )
+                      ? 'rd-input-date-week-day-disabled'
+                      : ''
+                    : ''
+                "
+              >
                 <div
                   v-if="
                     isSameDay(
@@ -174,7 +207,26 @@
           </div>
           <div class="rd-input-date-weeks rd-input-date-weeks-next">
             <div v-for="i in 6" :key="i" class="rd-input-date-week">
-              <div v-for="j in 7" :key="j" class="rd-input-date-week-day">
+              <div
+                v-for="j in 7"
+                :key="j"
+                class="rd-input-date-week-day"
+                :class="
+                  props.input.threshold
+                    ? isYesterday(
+                        selectedMonth.month === 11
+                          ? selectedMonth.year + 1
+                          : selectedMonth.year,
+                        selectedMonth.month === 11
+                          ? 0
+                          : selectedMonth.month + 1,
+                        nextDays[i - 1][j - 1]
+                      )
+                      ? 'rd-input-date-week-day-disabled'
+                      : ''
+                    : ''
+                "
+              >
                 <div
                   v-if="
                     isSameDay(
@@ -224,7 +276,7 @@
   import gsap from "gsap";
   import { ComputedRef } from "vue";
 
-  import { InputOption } from "~~/interfaces/general.js";
+  import { InputDateOption } from "~~/interfaces/general.js";
 
   interface DateObject {
     date?: number;
@@ -233,7 +285,7 @@
   }
 
   const props = defineProps<{
-    input: InputOption;
+    input: InputDateOption;
   }>();
 
   const rdInputDate = ref<HTMLDivElement>(null);
@@ -376,12 +428,7 @@
 
   function isYesterday(y: number, m: number, d: number): boolean {
     const day: Date = new Date(y, m, d);
-    const today: Date = new Date(
-      todayDate.value.year,
-      todayDate.value.month,
-      todayDate.value.date
-    );
-    return day.getTime() < today.getTime();
+    return day.getTime() < props.input.threshold.getTime();
   }
   function isSameDay(y: number, m: number, d: number): boolean {
     return (
@@ -635,7 +682,7 @@
         }
       }
       .rd-input-date {
-        z-index: 20000;
+        z-index: 20000000;
         pointer-events: none;
         position: absolute;
         top: 100%;
@@ -771,6 +818,10 @@
                   border-radius: 50%;
                   background: var(--font-color);
                   opacity: 0.05;
+                }
+                &.rd-input-date-week-day-disabled {
+                  pointer-events: none;
+                  opacity: 0.5;
                 }
               }
               &:last-child {

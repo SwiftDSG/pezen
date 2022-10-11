@@ -17,7 +17,13 @@
         class="rd-input rd-body-text"
         :placeholder="props.input.placeholder"
         :name="props.input.name"
-        :type="props.input.type === 'number' ? 'text' : props.input.type"
+        :type="
+          props.input.type === 'number' ||
+          props.input.type === 'hour' ||
+          props.input.type === 'minute'
+            ? 'text'
+            : props.input.type
+        "
         :disabled="props.input.disabled"
         ref="rdInput"
         @input="updateModel"
@@ -63,6 +69,19 @@
         } else {
           target.value = inputModel.value;
         }
+      } else if (props.input.type === "hour") {
+        let num: number = Math.abs(parseInt(target.value));
+        if (isNaN(num)) target.value = "00";
+        else if (num > 23) {
+          target.value = "23";
+        } else target.value = num.toString().padStart(2, "0");
+        props.input.model = target.value;
+      } else if (props.input.type === "minute") {
+        let num: number = Math.abs(parseInt(target.value));
+        if (isNaN(num)) target.value = "00";
+        else if (num > 59) target.value = "59";
+        else target.value = num.toString().padStart(2, "0");
+        props.input.model = target.value;
       } else {
         inputModel.value = target.value;
         props.input.model = target.value;

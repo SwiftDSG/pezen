@@ -1,5 +1,6 @@
 import { RestaurantMenusResponse } from "~~/interfaces/general";
-import { Restaurant, RestaurantType } from "~~/interfaces/restaurants";
+import { RestaurantDetails, RestaurantType } from "~~/interfaces/restaurants";
+
 
 export default function () {
   const { positionCurrent } = useMain()
@@ -32,11 +33,18 @@ export default function () {
     return result
   }
 
-  const getRestaurantDetails = async (code: string): Promise<Restaurant> => {
+  const checkRestaurantAvailability = async (payload: { id: string, guest: number, date: number }): Promise<RestaurantDetails['tables']> => {
+    const response: Response = await $fetch(`${config.public.apiBase}/restaurants/availability/${payload.id}?guests=${payload.guest}&date=${payload.date}`, 'get')
+
+    const result: RestaurantDetails['tables'] = await response.json()
+    return result
+  }
+
+  const getRestaurantDetails = async (code: string): Promise<RestaurantDetails> => {
     const response: Response = await $fetch(`${config.public.apiBase}/restaurants/details/${code}${positionCurrent.value ? `?lat=${positionCurrent.value.position.lat}&lng=${positionCurrent.value.position.lng}` : ''
       }`, 'get')
 
-    const result: Restaurant = await response.json()
+    const result: RestaurantDetails = await response.json()
     return result
   }
 
@@ -47,5 +55,6 @@ export default function () {
     return result
   }
 
-  return { restaurantTypes, checkRestaurant, getRestaurantDetails, getRestaurantMenus }
+
+  return { restaurantTypes, checkRestaurant, checkRestaurantAvailability, getRestaurantDetails, getRestaurantMenus }
 }

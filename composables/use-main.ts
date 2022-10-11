@@ -156,6 +156,15 @@ export default function () {
       case 'VERIFICATION_CODE_DID_NOT_MATCH':
         message = 'Kode yang dimasukkan salah'
         break;
+      case 'RESTAURANT_UNAVAILABLE':
+        message = 'Restoran tidak melayani reservasi'
+        break;
+      case 'RESTAURANT_FULL':
+        message = 'Restoran sedang penuh'
+        break;
+      case 'RESTAURANT_CLOSED':
+        message = 'Restoran tutup di waktu tersebut'
+        break;
       default:
         message = 'Terjadi masalah, silahkan coba lagi'
         break;

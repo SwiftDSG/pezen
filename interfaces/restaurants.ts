@@ -26,6 +26,7 @@ export interface RestaurantMin {
   _id: string
   code: string
   name: string
+  logo_url?: string
 }
 
 export interface Restaurant {
@@ -49,4 +50,16 @@ export interface Restaurant {
     value: number
   }
   create_date: Date
+}
+
+export interface RestaurantDetails extends Restaurant {
+  methods: {
+    'dine-in': {
+      count: number
+    }
+    'pre-order': {
+      count: number
+    }
+  }
+  tables: { _id: string; table_number: string, capacity?: number }[]
 }

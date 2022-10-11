@@ -1,30 +1,50 @@
 <template>
   <div class="rd-container" ref="rdContainer">
-    <div v-if="restaurant" class="rd-header">
+    <div
+      v-if="restaurant"
+      class="rd-header"
+      :class="scrollValue > 0 ? 'rd-header-active' : ''"
+    >
       <div class="rd-restaurant-name-container">
         <rd-input-button-small icon="arrow-left" />
-        <h2
+        <span
           class="rd-restaurant-name"
           :class="viewMode === 'mobile' ? 'rd-headline-5' : 'rd-headline-3'"
         >
           {{ restaurant.name }}
-        </h2>
+        </span>
         <rd-input-button-small
           v-if="viewMode === 'mobile'"
           icon="information"
         />
       </div>
-      <div v-if="viewMode === 'desktop'" class="rd-restaurant-order-method">
+      <div
+        v-if="viewMode === 'desktop'"
+        @click="backdropIndex = 0"
+        class="rd-restaurant-order-method"
+      >
         <div class="rd-restaurant-order-method-details">
-          <span class="rd-restaurant-order-method-value rd-headline-5"
-            >Dine in</span
-          >
-          <span class="rd-restaurant-order-method-placeholder rd-caption-text"
-            >13 menu tersedia</span
+          <span class="rd-restaurant-order-method-value rd-headline-5">{{
+            `${restaurantSelectedMethod.name}${
+              restaurantSelectedMethod.type === "dine-in"
+                ? ` (${
+                    restaurantSelectedMethod.table
+                      ? `meja ${restaurantSelectedMethod.table}`
+                      : "take away"
+                  })`
+                : ""
+            }`
+          }}</span>
+          <span
+            class="rd-restaurant-order-method-placeholder rd-caption-text"
+            >{{ restaurantSelectedMethod.message }}</span
           >
         </div>
         <div class="rd-restaurant-order-method-icon-container">
-          <rd-svg class="rd-restaurant-order-method-icon" name="table-chair" />
+          <rd-svg
+            class="rd-restaurant-order-method-icon"
+            :name="restaurantSelectedMethod.icon"
+          />
         </div>
       </div>
     </div>
@@ -151,19 +171,32 @@
             </div>
           </div>
         </div>
-        <div v-if="viewMode === 'mobile'" class="rd-restaurant-order-method">
+        <div
+          v-if="viewMode === 'mobile'"
+          @click="backdropIndex = 0"
+          class="rd-restaurant-order-method"
+        >
           <div class="rd-restaurant-order-method-icon-container">
             <rd-svg
               class="rd-restaurant-order-method-icon"
-              name="table-chair"
+              :name="restaurantSelectedMethod.icon"
             />
           </div>
           <div class="rd-restaurant-order-method-details">
-            <span class="rd-restaurant-order-method-value rd-headline-5"
-              >Dine in</span
-            >
-            <span class="rd-restaurant-order-method-placeholder rd-caption-text"
-              >13 menu tersedia</span
+            <span class="rd-restaurant-order-method-value rd-headline-5">{{
+              `${restaurantSelectedMethod.name}${
+                restaurantSelectedMethod.type === "dine-in"
+                  ? ` (${
+                      restaurantSelectedMethod.table
+                        ? `meja ${restaurantSelectedMethod.table}`
+                        : "take away"
+                    })`
+                  : ""
+              }`
+            }}</span>
+            <span
+              class="rd-restaurant-order-method-placeholder rd-caption-text"
+              >{{ restaurantSelectedMethod.message }}</span
             >
           </div>
         </div>
@@ -177,17 +210,47 @@
           <span class="rd-restaurant-menus-category rd-headline-4">{{
             menus.category
           }}</span>
-          <span class="rd-restaurant-menus-count rd-headline-4">{{
+          <span class="rd-restaurant-menus-count rd-headline-5">{{
             `${menus.menus?.length} item`
           }}</span>
         </div>
         <div class="rd-restaurant-menus-body">
           <rd-menu
+            @add="addToCart"
+            @subtract="subtractFromCart"
             v-for="menu in menus.menus"
             :key="menu._id"
             :data="menu"
+            :cart="restaurantCart?.find((a) => a._id === menu._id)"
             class="rd-restaurant-menu"
           />
+        </div>
+      </div>
+    </div>
+    <div
+      class="rd-notification-container"
+      :style="!restaurantCart.length ? 'pointer-events: none' : ''"
+      @click="
+        emits('change-page', `/restaurants/${route.params.code}/checkout`)
+      "
+    >
+      <div
+        :style="restaurantCart.length ? 'transform: translateY(0)' : ''"
+        class="rd-notification"
+      >
+        <div class="rd-notification-icon-container">
+          <rd-svg class="rd-notification-icon" name="basket" color="primary" />
+        </div>
+        <div class="rd-notification-details">
+          <span class="rd-notification-value rd-headline-5">
+            {{ `${restaurantCartTotal.count} item` }}
+          </span>
+          <span class="rd-notification-placeholder rd-caption-text">
+            {{ restaurantSelectedMethod.name }}
+          </span>
+          <span class="rd-notification-price rd-headline-6">
+            {{ `Rp ${restaurantCartTotal.value.toLocaleString("de-DE")}` }}
+          </span>
         </div>
       </div>
     </div>
@@ -196,6 +259,40 @@
       style="height: 100vh"
       :state="restaurantLoading ? 'show' : 'hide'"
     />
+    <rd-backdrop
+      class="rd-backdrop"
+      v-if="backdropIndex !== -1"
+      :state="backdropState"
+      @exit="
+        backdropIndex = -1;
+        backdropState = 'idle';
+      "
+    >
+      <div class="rd-backdrop-header">
+        <span class="rd-backdrop-title rd-headline-3">Metode pemesanan</span>
+      </div>
+      <div v-if="backdropIndex === 0" class="rd-backdrop-body">
+        <div
+          v-for="method in restaurantOrderMethods"
+          :key="method.type"
+          class="rd-backdrop-order-method"
+          @click="changeMethod(method.type)"
+        >
+          <div class="rd-backdrop-order-method-icon-container">
+            <rd-svg class="rd-backdrop-order-method-icon" :name="method.icon" />
+          </div>
+          <div class="rd-backdrop-order-method-details">
+            <span class="rd-backdrop-order-method-value rd-headline-5">{{
+              method.name
+            }}</span>
+            <span
+              class="rd-backdrop-order-method-placeholder rd-caption-text"
+              >{{ method.message }}</span
+            >
+          </div>
+        </div>
+      </div>
+    </rd-backdrop>
   </div>
 </template>
 
@@ -205,15 +302,25 @@
     RestaurantMenuCategories,
     RestaurantMenusResponse,
   } from "~~/interfaces/general";
-  import { MenuPack } from "~~/interfaces/menus";
-  import { Restaurant } from "~~/interfaces/restaurants";
+  import { Menu, MenuCart, MenuPack } from "~~/interfaces/menus";
+  import { OrderMethod } from "~~/interfaces/orders";
+  import { RestaurantDetails } from "~~/interfaces/restaurants";
 
   const route = useRoute();
+  const router = useRouter();
   const { viewMode } = useMain();
   const { setAlert } = useAlert();
   const { restaurantTypes, getRestaurantDetails, getRestaurantMenus } =
     useRestaurants();
+  const { cart, setCart, loadCart } = useOrders();
+  const emits = defineEmits(["open-panel", "change-page"]);
 
+  const scrollValue = ref<number>(0);
+
+  const backdropIndex = ref<number>(-1);
+  const backdropState = ref<"idle" | "hide">("idle");
+
+  const restaurantCart = ref<MenuCart[]>([]);
   const restaurantMenus = ref<{
     "dine-in": RestaurantMenusResponse;
     "pre-order": RestaurantMenusResponse;
@@ -222,7 +329,7 @@
     "pre-order": null,
   });
   const restaurantLoading = ref<boolean>(true);
-  const restaurant = ref<Restaurant>(null);
+  const restaurant = ref<RestaurantDetails>(null);
 
   const visibleMenus = ref<RestaurantMenuCategories[]>(null);
   const visibleMenuPacks = ref<MenuPack[]>(null);
@@ -244,6 +351,56 @@
     "Sabtu",
   ];
 
+  const restaurantOrderMethods: ComputedRef<OrderMethod[]> = computed(() => {
+    let arr: OrderMethod[] = [
+      {
+        type: "dine-in",
+        name: "Dine in",
+        available: !!restaurant.value?.methods["dine-in"]?.count,
+        message: `${
+          restaurant.value?.methods["dine-in"]?.count || 0
+        } menu tersedia`,
+        icon: "silverware",
+        table: route.query?.table?.toString(),
+      },
+      {
+        type: "booking",
+        name: "Reservasi",
+        available: !!restaurant.value?.methods["dine-in"]?.count,
+        message: `${
+          restaurant.value?.methods["dine-in"]?.count || 0
+        } menu tersedia`,
+        icon: "table-chair",
+        guest: parseInt(route.query?.guest?.toString() || "0"),
+        date: parseInt(route.query?.date?.toString() || "0"),
+      },
+      {
+        type: "pre-order",
+        name: "Pre-order",
+        available: !!restaurant.value?.methods["pre-order"]?.count,
+        message: `${
+          restaurant.value?.methods["pre-order"]?.count || 0
+        } menu tersedia`,
+        icon: "calendar",
+      },
+    ];
+    return arr;
+  });
+
+  const restaurantSelectedMethod: ComputedRef<OrderMethod> = computed(() => {
+    let str: string = route.query?.type?.toString() || "";
+    if (str !== "booking" && str !== "dine-in" && str !== "pre-order")
+      str = "dine-in";
+    return restaurantOrderMethods.value.find((a) => a.type === str);
+  });
+  const restaurantMenuType: ComputedRef<"dine-in" | "pre-order"> = computed(
+    () => {
+      let str: string = route.query?.type?.toString() || "";
+      if (str === "booking" || (str !== "dine-in" && str !== "pre-order"))
+        return "dine-in";
+      return str;
+    }
+  );
   const restaurantCity: ComputedRef<string> = computed(() => {
     let str: string = "";
     if (!restaurant.value) str = "Indonesia";
@@ -265,39 +422,190 @@
     }
     return str;
   });
-  const restaurantOrderMethod: ComputedRef<"dine-in" | "pre-order"> = computed(
-    () => {
-      let str: string = route.query.type.toString();
-      if (str === "booking" || (str !== "dine-in" && str !== "pre-order"))
-        return "dine-in";
-      return str;
+  const restaurantCartTotal: ComputedRef<{ count: number; value: number }> =
+    computed(() => {
+      const count: number =
+        restaurantCart.value?.reduce((a, b) => a + b.quantity, 0) || 0;
+      const value: number =
+        restaurantCart.value?.reduce(
+          (a, b) => a + b.quantity * (b.markup_price || b.price),
+          0
+        ) || 0;
+      return { count, value };
+    });
+
+  function scrollHandler(): void {
+    scrollValue.value = document.documentElement.scrollTop;
+  }
+  function addToCart(data: Menu): void {
+    const index: number = restaurantCart.value.findIndex(
+      (a) => a._id === data._id
+    );
+    if (index > -1) {
+      restaurantCart.value[index].quantity++;
+    } else {
+      restaurantCart.value.push({
+        _id: data._id,
+        name: data.name,
+        quantity: 1,
+        price: data.price,
+        markup_price: data.markup_price,
+        image_url: data.image_url,
+      });
     }
+  }
+  function subtractFromCart(data: Menu): void {
+    const index: number = restaurantCart.value.findIndex(
+      (a) => a._id === data._id
+    );
+    if (index > -1) {
+      if (restaurantCart.value[index].quantity > 1) {
+        restaurantCart.value[index].quantity--;
+      } else {
+        restaurantCart.value.splice(index, 1);
+      }
+    }
+  }
+  function changeMethod(type: OrderMethod["type"]): void {
+    backdropState.value = "hide";
+    if (type === "dine-in") {
+      emits("open-panel", {
+        state: "show",
+        type: "scanner",
+        data: route.params.code,
+      });
+    } else if (type === "booking") {
+      emits("open-panel", {
+        state: "show",
+        type: "booking",
+        data: {
+          code: route.params.code,
+          id: restaurant.value._id,
+        },
+      });
+    } else if (type === "pre-order") {
+      router.replace({
+        query: {
+          type,
+        },
+      });
+    }
+  }
+
+  watch(
+    () => restaurantCart.value,
+    (val) => {
+      if (val.length) {
+        setCart({
+          restaurant: {
+            _id: restaurant.value._id,
+            name: restaurant.value.name,
+            logo_url: restaurant.value.logo_url,
+            code: route.params.code.toString(),
+          },
+          method: {
+            type: restaurantSelectedMethod.value.type,
+            guest: restaurantSelectedMethod.value.guest,
+            date: restaurantSelectedMethod.value.date,
+            table: restaurantSelectedMethod.value.table,
+          },
+          items: val,
+        });
+      } else {
+        setCart(null);
+      }
+    },
+    { deep: true }
+  );
+
+  watch(
+    () => restaurantMenuType.value,
+    async (val) => {
+      restaurantCart.value = [];
+      if (!restaurantMenus.value[val]) {
+        restaurantLoading.value = true;
+        restaurantMenus.value[val] = await getRestaurantMenus(
+          route.params.code.toString(),
+          val
+        );
+        visibleMenus.value = restaurantMenus.value[val]?.categories;
+        visibleMenuPacks.value = restaurantMenus.value[val]?.packs || [];
+        setTimeout(() => {
+          restaurantLoading.value = false;
+        }, 500);
+      } else {
+        visibleMenus.value = restaurantMenus.value[val]?.categories;
+        visibleMenuPacks.value = restaurantMenus.value[val]?.packs || [];
+      }
+    }
+  );
+
+  watch(
+    () => restaurantSelectedMethod.value,
+    (val) => {
+      if (val.type === "booking" && !val.date) {
+        emits("open-panel", {
+          state: "show",
+          type: "booking",
+          data: {
+            code: route.params.code,
+            id: restaurant.value._id,
+          },
+        });
+      }
+    },
+    { deep: true }
   );
 
   onMounted(async () => {
     try {
+      if (!route.query.type) {
+        router.replace({
+          query: {
+            type: "dine-in",
+          },
+        });
+      }
       restaurant.value = await getRestaurantDetails(
         route.params.code.toString()
       );
-      restaurantMenus.value[restaurantOrderMethod.value] =
+      restaurantMenus.value[restaurantMenuType.value] =
         await getRestaurantMenus(
           route.params.code.toString(),
-          restaurantOrderMethod.value
+          restaurantMenuType.value
         );
       visibleMenus.value =
-        restaurantMenus.value[restaurantOrderMethod.value].categories;
-      console.log(visibleMenus.value);
+        restaurantMenus.value[restaurantMenuType.value].categories;
       visibleMenuPacks.value =
-        restaurantMenus.value[restaurantOrderMethod.value].packs || [];
+        restaurantMenus.value[restaurantMenuType.value].packs || [];
       setTimeout(() => {
         restaurantLoading.value = false;
+        loadCart(route.params.code.toString());
+        if (
+          cart.value &&
+          restaurantSelectedMethod.value.type === cart.value.method.type
+        ) {
+          restaurantCart.value = cart.value.items;
+        } else {
+          setCart(null);
+        }
       }, 500);
+
+      if (viewMode.value === "mobile") {
+        document.addEventListener("scroll", scrollHandler);
+      }
     } catch (e) {
       setAlert({
         type: "error",
         title: "Tidak dapat memuat restoran",
         message: "Terjadi masalah memuat restoran",
       });
+    }
+  });
+
+  onBeforeUnmount(() => {
+    if (viewMode.value === "mobile") {
+      document.removeEventListener("scroll", scrollHandler);
     }
   });
 </script>
@@ -325,6 +633,48 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        span.rd-restaurant-name {
+          position: relative;
+          opacity: 0;
+          transform: scale(0.875);
+          transition: 0.25s opacity, 0.25s transform;
+        }
+      }
+      &.rd-header-active {
+        .rd-restaurant-name-container {
+          span.rd-restaurant-name {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        &::before {
+          opacity: 1;
+        }
+        &::after {
+          opacity: 1;
+        }
+      }
+      &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--background-depth-one-color);
+        opacity: 0;
+        transition: 0.25s opacity;
+      }
+      &::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: var(--border-color);
+        opacity: 0;
+        transition: 0.25s opacity;
       }
     }
     .rd-body {
@@ -556,6 +906,7 @@
         width: 100%;
         padding: 0 1rem;
         box-sizing: border-box;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         .rd-restaurant-menus-header {
@@ -571,9 +922,146 @@
           width: 100%;
           display: flex;
           flex-direction: column;
+          .rd-restaurant-menu {
+            margin-bottom: 0.75rem;
+          }
         }
         &:last-child {
           margin: 0 0 1rem 0;
+        }
+      }
+    }
+    .rd-notification-container {
+      z-index: 3;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4rem;
+      padding: 0 1rem 1rem 1rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      .rd-notification {
+        cursor: pointer;
+        position: relative;
+        width: 100%;
+        height: 3rem;
+        padding: 0.5rem;
+        border-radius: 0.75rem;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+        background: rgba(43, 25, 6, 0.5);
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        transform: translateY(5rem);
+        transform-origin: top center;
+        transition: transform 0.25s ease-out;
+        .rd-notification-icon-container {
+          position: relative;
+          width: 2rem;
+          height: 2rem;
+          flex-shrink: 0;
+          border-radius: 0.5rem;
+          padding: 0 0.5rem;
+          box-sizing: border-box;
+          background: rgba(0, 0, 0, 0.25);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .rd-notification-details {
+          position: relative;
+          width: calc(100% - 2rem);
+          height: 100%;
+          color: #fff;
+          padding-left: 0.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: flex-start;
+          span {
+            position: relative;
+            color: inherit;
+          }
+          span.rd-notification-placeholder {
+            margin-top: 0.125rem;
+          }
+          span.rd-notification-price {
+            position: absolute;
+            top: 0;
+            right: 0.75rem;
+            height: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+          }
+        }
+      }
+    }
+    .rd-backdrop {
+      .rd-backdrop-header {
+        position: relative;
+        width: 100%;
+        margin: 1rem 0;
+        display: flex;
+        .rd-backdrop-title {
+          position: relative;
+          width: 100%;
+          height: 1rem;
+          display: flex;
+          flex-shrink: 0;
+          align-items: center;
+        }
+      }
+      .rd-backdrop-body {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        .rd-backdrop-order-method {
+          cursor: pointer;
+          position: relative;
+          width: 100%;
+          border: var(--border);
+          border-radius: 0.75rem;
+          padding: 0.75rem;
+          margin-bottom: 0.75rem;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          .rd-backdrop-order-method-icon-container {
+            position: relative;
+            width: 2rem;
+            height: 2rem;
+            border: var(--border);
+            border-radius: 0.5rem;
+            padding: 0 0.5rem;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+          .rd-backdrop-order-method-details {
+            position: relative;
+            width: calc(100% - 2rem);
+            height: 100%;
+            padding-left: 0.5rem;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            span.rd-backdrop-order-method-placeholder {
+              position: relative;
+              margin-top: 0.125rem;
+            }
+          }
+          &:last-child {
+            margin-bottom: 0;
+          }
         }
       }
     }
@@ -593,9 +1081,11 @@
         justify-content: space-between;
         .rd-restaurant-name-container {
           width: auto;
-          h2.rd-restaurant-name {
+          span.rd-restaurant-name {
             position: relative;
+            opacity: 1;
             margin-left: 1rem;
+            transform: none;
           }
         }
         .rd-restaurant-order-method {
@@ -762,9 +1252,19 @@
             box-sizing: border-box;
           }
           &:last-child {
-            margin: 0 2rem 0 0;
+            margin: 2rem;
           }
         }
+      }
+      .rd-notification-container {
+        height: 5rem;
+        padding: 0 0 2rem 0;
+        .rd-notification {
+          width: 20rem;
+        }
+      }
+      .rd-backdrop {
+        padding: 0 2rem;
       }
     }
   }

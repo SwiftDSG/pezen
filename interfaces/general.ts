@@ -65,12 +65,23 @@ export interface InputOption {
   icon?: string
   label?: string
   error?: string
-  type?: 'email' | 'password' | 'tel' | 'number'
+  type?: 'email' | 'password' | 'tel' | 'number' | 'hour' | 'minute'
   disabled?: boolean
   options?: (string | {
     name: string
     value: string
   })[]
+}
+export interface InputDateOption {
+  name: string
+  placeholder: string
+  model: string
+  value?: string
+  icon?: string
+  label?: string
+  error?: string
+  disabled?: boolean
+  threshold?: Date
 }
 export interface InputCodeOption {
   name: string

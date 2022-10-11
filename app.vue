@@ -55,7 +55,11 @@
       </div>
     </header>
     <main class="rd-body" ref="rdBody">
-      <nuxt-page @shake="shake" @open-panel="panelHandler" />
+      <nuxt-page
+        @shake="shake"
+        @open-panel="panelHandler"
+        @change-page="changeHandler"
+      />
     </main>
     <nav
       class="rd-navigation"
@@ -93,6 +97,13 @@
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
     />
+    <rd-booking-panel
+      v-if="panelOpened === 'booking'"
+      :state="panelState"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
+      @change-page="changeHandler"
+    />
     <rd-scanner-panel
       v-if="panelOpened === 'scanner'"
       :state="panelState"
@@ -120,7 +131,12 @@
     icon: string;
   }
 
-  type PanelType = "addresses" | "addresses-add" | "search" | "scanner";
+  type PanelType =
+    | "addresses"
+    | "addresses-add"
+    | "booking"
+    | "search"
+    | "scanner";
 
   const { initSocket } = useSockets();
   const { user, refresh } = useUser();
@@ -260,9 +276,19 @@
     scrollValue.value = document.documentElement.scrollTop;
   }
   function changeHandler(to: string): void {
-    animate.exitPage(rdBody.value, () => {
-      router.push(to);
-    });
+    const [path, queryString]: string[] = to.split("?");
+    if (route.path !== path) {
+      animate.exitPage(rdBody.value, () => {
+        router.push(to);
+      });
+    } else if (queryString) {
+      const queries: Record<string, string> = {};
+      for (const query of queryString.split("&")) {
+        const [key, value]: string[] = query.split("=");
+        queries[key] = value;
+      }
+      router.replace({ query: queries });
+    }
   }
 
   watch(

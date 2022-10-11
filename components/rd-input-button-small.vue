@@ -3,11 +3,16 @@
     class="rd-input-component"
     ref="rdInputComponent"
     @mousedown="mouseDownHandler"
-    :class="disabled ? 'rd-input-component-disabled' : ''"
+    :class="`${
+      disabled ? 'rd-input-component-disabled' : ''
+    } rd-input-component-${type || 'default'}`"
     :disabled="disabled"
   >
     <div v-if="icon" class="rd-input-icon-container">
-      <rd-svg :name="props.icon" />
+      <rd-svg
+        :name="props.icon"
+        :color="type === 'primary' ? 'secondary' : ''"
+      />
     </div>
     <div v-else class="rd-input-image-container">
       <img :src="image" class="rd-input-image" />
@@ -23,6 +28,7 @@
     icon?: string;
     image?: string;
     disabled?: boolean;
+    type?: "default" | "primary" | "secondary";
   }>();
   const emits = defineEmits(["clicked"]);
 
@@ -164,6 +170,10 @@
       pointer-events: none;
       filter: grayscale(0.75);
       opacity: 0.5;
+    }
+    &.rd-input-component-primary {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
     }
   }
 </style>

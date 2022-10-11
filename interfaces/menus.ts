@@ -16,8 +16,24 @@ interface MenuBase {
   create_date?: Date
 }
 
+export interface MenuCart {
+  _id: string
+  name: string
+  quantity: number
+  price: number
+  markup_price: number
+  image_url?: string
+  note?: string
+  take_away?: boolean
+}
+
 export interface Menu extends MenuBase {
   stock?: number
+  eligible_promos?: {
+    _id: string
+    p_ids: string[]
+    amount: number
+  }
 }
 
 export interface MenuPack extends MenuBase {
@@ -25,4 +41,18 @@ export interface MenuPack extends MenuBase {
     available: number
     quantity: number
   }
+}
+
+interface MenuGroupDelivery {
+  type: 'car' | 'bike',
+  name: string
+  fee: number
+  address: any
+}
+
+export interface MenuGroup {
+  code: string
+  items: MenuCart[]
+  date?: Date
+  delivery?: MenuGroupDelivery
 }
