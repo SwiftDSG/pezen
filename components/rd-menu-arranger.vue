@@ -227,6 +227,7 @@
           viewMode.value === "mobile"
             ? document.documentElement.scrollTop
             : rdComponent.value.scrollLeft;
+        animationGroupIndex = -1;
 
         if (e.target instanceof HTMLElement) {
           rdMenuTarget.value = e.target;
@@ -376,28 +377,33 @@
       if (groups.value[groupRemoveIndex].items.length <= 1) groupRemove = true;
 
       if (viewMode.value === "desktop") {
-        let scrollToBottom: boolean = false;
+        // Handle desktop drag-release
+        let scrollToBottom: boolean = false; // Variable to determine wether the body element should scroll to bottom or not
         const rdGroupBody: HTMLElement =
-          rdGroup.value[index].querySelector(".rd-group-body");
+          rdGroup.value[index].querySelector(".rd-group-body"); // body element
         const { height, bottom, left }: DOMRect =
-          rdGroupBody.getBoundingClientRect();
+          rdGroupBody.getBoundingClientRect(); // get body height, bottom and left
 
-        if ((group.items.length + 1) * (5.5 * rem.value + 2) >= height)
-          scrollToBottom = true;
+        if (
+          (group.items.length + 1) * (5.5 * rem.value + 2) +
+            group.items.length * rem.value >=
+          height
+        )
+          scrollToBottom = true; // If total item's height greater than body's height
 
         const x: number =
-          left - parseInt(getComputedStyle(rdMenuDecoy.value).left);
+          left - parseInt(getComputedStyle(rdMenuDecoy.value).left); // get distance to target's x
 
-        let y: number = 0;
+        let y: number = 0; // distance to target's y
         if (scrollToBottom) {
+          // will scroll body to bottom
           gsap.to(rdGroupBody, {
-            paddingBottom:
-              (5.5 + (viewMode.value === "desktop" ? 2 : 2 * 0.75)) *
-                rem.value +
-              2,
+            // add padding to be able to scroll to bottom with extra space for another item
+            paddingBottom: 7.5 * rem.value + 2,
             duration: 0,
             onComplete() {
               gsap.to(rdGroupBody, {
+                // scroll the body
                 scrollTo: "max",
                 duration: 0.5,
                 ease: "power2.inOut",
@@ -425,14 +431,35 @@
 
             if (scrollToBottom) {
               gsap.to(rdGroupBody, {
-                paddingBottom:
-                  viewMode.value === "desktop" ? rem.value : 0.75 * rem.value,
+                paddingBottom: rem.value,
               });
             }
 
             if (groupRemove) {
               const rdGroupRemove: HTMLElement =
                 rdGroup.value[groupRemoveIndex];
+
+              const {
+                right: groupRight,
+                left: groupLeft,
+                width,
+              }: DOMRect = rdGroupRemove.getBoundingClientRect();
+              const { right: componentRight }: DOMRect =
+                rdComponent.value.getBoundingClientRect();
+
+              let dx: number = 0;
+              if (groupLeft <= componentRight && groupRight > componentRight) {
+                dx = componentRight - groupLeft;
+              } else {
+                dx = width;
+              }
+              gsap.to(rdComponent.value, {
+                scrollTo: {
+                  x: `-=${dx}`,
+                },
+                duration: 0.5,
+                ease: "power2.out",
+              });
 
               animate.groupRemove(
                 viewMode.value,
@@ -451,7 +478,6 @@
               ].querySelector(
                 `.rd-group-menu[data-menu-id='${animationMenuId.value}']`
               );
-              console.log(rdMenu);
               animate.groupItemRemove(
                 viewMode.value,
                 animationMenuId.value,
@@ -466,6 +492,7 @@
             }
           },
         });
+      } else {
       }
     }
   }
@@ -618,6 +645,9 @@
               filter: grayscale(0);
             }
           }
+        }
+        &::-webkit-scrollbar {
+          display: none;
         }
       }
       .rd-group-footer {
