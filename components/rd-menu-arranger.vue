@@ -35,36 +35,31 @@
           :data-group-code="group.code"
           :data-menu-id="menu._id"
           :style="j === group.items.length - 1 ? 'margin-bottom: 0' : ''"
-          @mousedown="dragStart"
-          @touchstart="dragStart"
+          @drag="dragStart"
         />
-        <div
-          :class="classHandler(group.code)"
-          @mouseenter="dragEnter"
-          @mouseleave="dragLeave"
-          @mouseup="dragRelease(i)"
-          class="rd-group-overlay"
-          ref="rdGroupOverlay"
-        >
-          <span class="rd-group-overlay-message rd-headline-6"
-            >drop disini</span
-          >
-        </div>
       </div>
       <div class="rd-group-footer"></div>
+      <div
+        :class="classHandler(group.code)"
+        @mouseenter="dragEnter"
+        @mouseleave="dragLeave"
+        @mouseup="dragRelease(i)"
+        class="rd-group-overlay"
+        ref="rdGroupOverlay"
+      >
+        <span class="rd-group-overlay-message rd-headline-6">drop disini</span>
+      </div>
     </div>
     <div
-      v-if="viewMode === 'desktop' && animationDragging"
-      class="rd-group-scroll-area rd-group-scroll-area-left"
-      @mouseenter="scrollBy('left')"
-      @mouseleave="scrollBy(null)"
-    ></div>
-    <div
-      v-if="viewMode === 'desktop' && animationDragging"
-      class="rd-group-scroll-area rd-group-scroll-area-right"
-      @mouseenter="scrollBy('right')"
-      @mouseleave="scrollBy(null)"
-    ></div>
+      :class="animationNewGroup ? 'rd-overlay-active' : ''"
+      @mouseenter="dragEnter"
+      @mouseleave="dragLeave"
+      @mouseup="dragRelease(-2)"
+      class="rd-overlay"
+      ref="rdOverlay"
+    >
+      <span class="rd-overlay-message rd-headline-6">grup baru</span>
+    </div>
     <rd-menu-cart
       v-if="animationDecoy"
       class="rd-group-menu-decoy"
@@ -100,9 +95,9 @@
   const animationDragging = ref<boolean>(false);
   const animationGroupCode = ref<string>("");
   const animationMenuId = ref<string>("");
+  const animationNewGroup = ref<boolean>(false);
 
   let animationInterval: NodeJS.Timer = null;
-  let animationTimeout: NodeJS.Timeout = null;
   let animationEventLast: MouseEvent | TouchEvent = null;
   let animationEventCurr: MouseEvent | TouchEvent = null;
   let animationScrollDir: AnimationScrollDirection = null;
@@ -126,13 +121,20 @@
             y: 0,
             duration: 0,
           });
+          if (viewMode === "mobile") {
+            gsap.to(rdGroup, {
+              height: "auto",
+              duration: 0,
+            });
+          }
 
           if (cb) cb();
         },
       });
 
+      const rdGroup: HTMLElement = rdMenu.parentElement;
       const rdMenusAfter: HTMLElement[] = gsap.utils.toArray(
-        rdMenu.parentElement.querySelectorAll(
+        rdGroup.querySelectorAll(
           `.rd-group-menu[data-menu-id='${id}'] ~ .rd-group-menu`
         )
       );
@@ -142,6 +144,18 @@
         duration: 0.5,
         ease: "power2.inOut",
       });
+
+      if (viewMode === "mobile") {
+        tl.to(
+          rdGroup,
+          {
+            height: `-=${6.25 * rem.value}`,
+            duration: 0.5,
+            ease: "power2.inOut",
+          },
+          "<0"
+        );
+      }
     },
     groupRemove(
       viewMode: ViewMode,
@@ -184,6 +198,16 @@
           },
           "<0"
         );
+      } else {
+        tl.to(
+          rdGroupsAfter,
+          {
+            y: `-=${rdGroup.getBoundingClientRect().height + 0.75 * rem.value}`,
+            duration: 0.5,
+            ease: "power2.inOut",
+          },
+          "<0"
+        );
       }
     },
   };
@@ -213,113 +237,130 @@
   }
 
   function dragStart(e: MouseEvent | TouchEvent): void {
-    if (viewMode.value === "desktop") {
-      document.documentElement.addEventListener("mousemove", dragHandler);
-      document.documentElement.addEventListener("mouseup", dragEnd);
-    } else {
+    if (viewMode.value === "mobile") {
       document.documentElement.addEventListener("touchmove", dragHandler);
       document.documentElement.addEventListener("touchend", dragEnd);
+    } else {
+      document.documentElement.addEventListener("mousemove", dragHandler);
+      document.documentElement.addEventListener("mouseup", dragEnd);
     }
-    animationTimeout = setTimeout(
-      () => {
-        animationDragging.value = true;
-        animationScrollPos =
-          viewMode.value === "mobile"
-            ? document.documentElement.scrollTop
-            : rdComponent.value.scrollLeft;
-        animationGroupIndex = -1;
+    if (
+      e?.target instanceof HTMLElement &&
+      !e?.target.parentElement.classList.contains("rd-menu-action-active")
+    ) {
+      animationDragging.value = true;
+      animationScrollPos =
+        viewMode.value === "mobile"
+          ? document.documentElement.scrollTop
+          : rdComponent.value.scrollLeft;
+      animationGroupIndex = -1;
 
-        if (e.target instanceof HTMLElement) {
-          rdMenuTarget.value = e.target;
-          const { x, y }: DOMRect = rdMenuTarget.value.getBoundingClientRect();
+      rdMenuTarget.value =
+        e.target instanceof HTMLElement ? e.target.parentElement : null;
+      const { x, y }: DOMRect = rdMenuTarget.value.getBoundingClientRect();
 
-          animationGroupCode.value = rdMenuTarget.value.dataset.groupCode;
-          animationMenuId.value = rdMenuTarget.value.dataset.menuId;
+      animationGroupCode.value = rdMenuTarget.value.dataset.groupCode;
+      animationMenuId.value = rdMenuTarget.value.dataset.menuId;
 
-          const group: MenuGroup = groups.value.find(
-            (a) => a.code === animationGroupCode.value
+      const group: MenuGroup = groups.value.find(
+        (a) => a.code === animationGroupCode.value
+      );
+      const menu: MenuCart = group?.items.find(
+        (a) => a._id === animationMenuId.value
+      );
+      if (menu) {
+        animationDecoy.value = menu;
+        setTimeout(() => {
+          rdMenuDecoy.value = rdComponent.value.querySelector(
+            ".rd-group-menu-decoy"
           );
-          const menu: MenuCart = group.items.find(
-            (a) => a._id === animationMenuId.value
-          );
-          if (menu) {
-            animationDecoy.value = menu;
-            setTimeout(() => {
-              rdMenuDecoy.value = rdComponent.value.querySelector(
-                ".rd-group-menu-decoy"
-              );
 
-              gsap.to(rdMenuTarget.value, {
-                opacity: 0,
-                duration: 0,
-              });
-              gsap.to(rdMenuDecoy.value, {
-                left: x,
-                top: y,
-                opacity: 1,
-                duration: 0,
-              });
-            }, 100);
+          gsap.to(rdMenuTarget.value, {
+            opacity: 0,
+            duration: 0,
+          });
+          gsap.to(rdMenuDecoy.value, {
+            left: x,
+            top: y,
+            opacity: 1,
+            duration: 0,
+          });
+        }, 100);
+      }
+
+      if (
+        groups.value.find((a) => a.code === animationGroupCode.value).items
+          .length > 1
+      ) {
+        animationNewGroup.value = true;
+      }
+
+      animationInterval = setInterval(() => {
+        if (animationEventCurr && animationEventLast && rdMenuDecoy.value) {
+          let dx: number = 0;
+          let dy: number = 0;
+          if (
+            animationEventCurr instanceof TouchEvent &&
+            animationEventLast instanceof TouchEvent
+          ) {
+            dx =
+              animationEventCurr.touches[0].clientX -
+              animationEventLast.touches[0].clientX;
+            dy =
+              animationEventCurr.touches[0].clientY -
+              animationEventLast.touches[0].clientY;
+          } else if (
+            animationEventCurr instanceof MouseEvent &&
+            animationEventLast instanceof MouseEvent
+          ) {
+            dx = animationEventCurr.x - animationEventLast.x;
+            dy = animationEventCurr.y - animationEventLast.y;
           }
+
+          gsap.to(rdMenuDecoy.value, {
+            x: `+=${dx}`,
+            y: `+=${dy}`,
+            duration: 0,
+          });
         }
-
-        animationInterval = setInterval(() => {
-          if (animationEventCurr && animationEventLast && rdMenuDecoy.value) {
-            let dx: number = 0;
-            let dy: number = 0;
-            if (
-              animationEventCurr instanceof TouchEvent &&
-              animationEventLast instanceof TouchEvent
-            ) {
-              dx =
-                animationEventCurr.touches[0].clientX -
-                animationEventLast.touches[0].clientX;
-              dy =
-                animationEventCurr.touches[0].clientY -
-                animationEventLast.touches[0].clientY;
-            } else if (
-              animationEventCurr instanceof MouseEvent &&
-              animationEventLast instanceof MouseEvent
-            ) {
-              dx = animationEventCurr.x - animationEventLast.x;
-              dy = animationEventCurr.y - animationEventLast.y;
-            }
-
-            gsap.to(rdMenuDecoy.value, {
-              x: `+=${dx}`,
-              y: `+=${dy}`,
-              duration: 0,
-            });
-          }
-          animationEventLast = animationEventCurr;
-        }, 50 / 3);
-      },
-      viewMode.value === "mobile" ? 250 : 125
-    );
+        animationEventLast = animationEventCurr;
+      }, 50 / 3);
+    }
   }
 
   function dragEnd(): void {
-    clearTimeout(animationTimeout);
     clearInterval(animationInterval);
 
     if (viewMode.value === "desktop") {
       document.documentElement.removeEventListener("mousemove", dragHandler);
       document.documentElement.removeEventListener("mouseup", dragEnd);
-    } else if (viewMode.value && animationEventLast instanceof TouchEvent) {
+    } else if (
+      viewMode.value === "mobile" &&
+      animationEventLast instanceof TouchEvent
+    ) {
       document.documentElement.removeEventListener("touchmove", dragHandler);
       document.documentElement.removeEventListener("touchend", dragEnd);
 
       const position: number = animationEventLast.touches[0].clientY;
       const boundaries: [number, number][] = [];
-      for (const rdOverlay of rdGroupOverlay.value || []) {
-        const { top, bottom }: DOMRect = rdOverlay.getBoundingClientRect();
 
-        boundaries.push([top, bottom]);
+      if (position >= window.innerHeight - 7.5 * rem.value) {
+        dragRelease(-2);
+      } else {
+        for (const rdOverlay of rdGroupOverlay.value || []) {
+          if (rdOverlay.classList.contains("rd-group-overlay-active")) {
+            const { top, bottom }: DOMRect = rdOverlay.getBoundingClientRect();
+
+            boundaries.push([top, bottom]);
+          } else {
+            boundaries.push([2, 1]);
+          }
+        }
+        const index: number = boundaries.findIndex(
+          (a) => position >= a[0] && position <= a[1]
+        );
+        if (index > -1) dragRelease(index);
       }
-      const index: number = boundaries.findIndex(
-        (a) => position >= a[0] && position <= a[1]
-      );
-      if (index > -1) dragRelease(index);
     }
 
     animationEventCurr = null;
@@ -327,6 +368,7 @@
     animationScrollDir = null;
 
     animationDragging.value = false;
+    animationNewGroup.value = false;
     setTimeout(() => {
       if (rdMenuDecoy.value && animationGroupIndex === -1) {
         const x: number =
@@ -355,7 +397,6 @@
     }, 100);
   }
   function dragHandler(e: MouseEvent | TouchEvent): void {
-    clearTimeout(animationTimeout);
     animationEventCurr = e;
 
     if (viewMode.value === "mobile" && e instanceof TouchEvent) {
@@ -363,26 +404,36 @@
       if (clientY <= 10 * rem.value) scrollBy("up");
       else if (clientY >= window.innerHeight - 10 * rem.value) scrollBy("down");
       else scrollBy(null);
+    } else if (viewMode.value === "desktop" && e instanceof MouseEvent) {
+      const { clientX } = e;
+      if (clientX <= 10 * rem.value) scrollBy("left");
+      else if (clientX >= window.innerWidth - 30 * rem.value) scrollBy("right");
+      else scrollBy(null);
     }
   }
 
-  function dragRelease(index: number): void {
+  function dragRelease(index?: number): void {
+    const groupRemoveIndex: number = groups.value.findIndex(
+      (a) => a.code === animationGroupCode.value
+    );
+    const rdGroupBodyRemove: HTMLElement =
+      rdGroup.value[groupRemoveIndex].querySelector(".rd-group-body");
+
     animationGroupIndex = index;
     const group: MenuGroup = groups.value[index];
+
     if (group) {
-      const groupRemoveIndex: number = groups.value.findIndex(
-        (a) => a.code === animationGroupCode.value
-      );
       let groupRemove: boolean = false;
       if (groups.value[groupRemoveIndex].items.length <= 1) groupRemove = true;
+
+      const rdGroupBody: HTMLElement =
+        rdGroup.value[index].querySelector(".rd-group-body"); // body element
+      const { height, bottom, left }: DOMRect =
+        rdGroupBody.getBoundingClientRect(); // get body height, bottom and left
 
       if (viewMode.value === "desktop") {
         // Handle desktop drag-release
         let scrollToBottom: boolean = false; // Variable to determine wether the body element should scroll to bottom or not
-        const rdGroupBody: HTMLElement =
-          rdGroup.value[index].querySelector(".rd-group-body"); // body element
-        const { height, bottom, left }: DOMRect =
-          rdGroupBody.getBoundingClientRect(); // get body height, bottom and left
 
         if (
           (group.items.length + 1) * (5.5 * rem.value + 2) +
@@ -393,8 +444,8 @@
 
         const x: number =
           left - parseInt(getComputedStyle(rdMenuDecoy.value).left); // get distance to target's x
-
         let y: number = 0; // distance to target's y
+
         if (scrollToBottom) {
           // will scroll body to bottom
           gsap.to(rdGroupBody, {
@@ -415,9 +466,16 @@
             (5.5 * rem.value + 2 + rem.value) -
             parseInt(getComputedStyle(rdMenuDecoy.value).top);
         } else {
-          y =
-            group.items.length * (5.5 * rem.value + 2) +
-            group.items.length * rem.value;
+          const { y: originTop }: DOMRect = rdGroupBodyRemove
+            .querySelector(
+              `.rd-group-menu[data-menu-id='${animationMenuId.value}']`
+            )
+            .getBoundingClientRect();
+          const { y: targetTop, height }: DOMRect = rdGroupBody
+            .querySelector(".rd-group-menu:last-child")
+            .getBoundingClientRect();
+
+          y = targetTop - originTop + height + rem.value;
         }
 
         gsap.to(rdMenuDecoy.value, {
@@ -428,6 +486,12 @@
           onComplete() {
             groups.value[index].items.push(animationDecoy.value);
             animationDecoy.value = null;
+
+            gsap.to(rdGroupBodyRemove, {
+              scrollTo: 0,
+              duration: 0.5,
+              ease: "power2.inOut",
+            });
 
             if (scrollToBottom) {
               gsap.to(rdGroupBody, {
@@ -451,7 +515,7 @@
               if (groupLeft <= componentRight && groupRight > componentRight) {
                 dx = componentRight - groupLeft;
               } else {
-                dx = width;
+                dx = width + 2 * rem.value;
               }
               gsap.to(rdComponent.value, {
                 scrollTo: {
@@ -493,14 +557,139 @@
           },
         });
       } else {
+        const x: number = 0;
+        let y: number = 0;
+
+        y = bottom - parseInt(getComputedStyle(rdMenuDecoy.value).top);
+
+        gsap.to(rdGroupBody, {
+          paddingBottom: 7 * rem.value + 2,
+          duration: 0.5,
+          ease: "power2.out",
+        });
+
+        gsap.to(rdMenuDecoy.value, {
+          x,
+          y,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete() {
+            gsap.to(rdGroupBody, {
+              paddingBottom: 0.75 * rem.value,
+              duration: 0,
+            });
+
+            groups.value[index].items.push(animationDecoy.value);
+            animationDecoy.value = null;
+
+            gsap.to(document.documentElement, {
+              // scroll the body
+              scrollTo: `-=${rdGroupBodyRemove.getBoundingClientRect().height}`,
+              duration: 0.5,
+              ease: "power2.inOut",
+            });
+
+            if (groupRemove) {
+              const rdGroupRemove: HTMLElement =
+                rdGroup.value[groupRemoveIndex];
+
+              animate.groupRemove(
+                viewMode.value,
+                animationGroupCode.value,
+                rdGroupRemove,
+                () => {
+                  groups.value.splice(groupRemoveIndex, 1);
+                }
+              );
+            } else {
+              const groupItemRemoveIndex: number = groups.value[
+                groupRemoveIndex
+              ].items.findIndex((a) => a._id === animationMenuId.value);
+              const rdMenu: HTMLElement = rdGroup.value[
+                groupRemoveIndex
+              ].querySelector(
+                `.rd-group-menu[data-menu-id='${animationMenuId.value}']`
+              );
+              animate.groupItemRemove(
+                viewMode.value,
+                animationMenuId.value,
+                rdMenu,
+                () => {
+                  groups.value[groupRemoveIndex].items.splice(
+                    groupItemRemoveIndex,
+                    1
+                  );
+                }
+              );
+            }
+          },
+        });
       }
+    } else if (index === -2) {
+      gsap.to(rdMenuDecoy.value, {
+        opacity: 0,
+        duration: 0.5,
+        ease: "power2.out",
+        onComplete() {
+          const groupItemRemoveIndex: number = groups.value[
+            groupRemoveIndex
+          ].items.findIndex((a) => a._id === animationMenuId.value);
+          const rdMenu: HTMLElement = rdGroup.value[
+            groupRemoveIndex
+          ].querySelector(
+            `.rd-group-menu[data-menu-id='${animationMenuId.value}']`
+          );
+          animationDecoy.value = null;
+
+          groups.value.push({
+            code: genRandomStr(),
+            items: [groups.value[groupRemoveIndex].items[groupItemRemoveIndex]],
+          });
+
+          if (viewMode.value === "desktop") {
+            gsap.to(rdComponent.value, {
+              scrollTo: {
+                x: "max",
+              },
+              duration: 0.5,
+              ease: "power2.inOut",
+            });
+            gsap.to(rdGroupBodyRemove, {
+              scrollTo: 0,
+              duration: 0.5,
+              ease: "power2.inOut",
+            });
+          } else {
+            gsap.to(document.documentElement, {
+              scrollTo: "max",
+              duration: 0.5,
+              ease: "power2.inOut",
+            });
+          }
+          animate.groupItemRemove(
+            viewMode.value,
+            animationMenuId.value,
+            rdMenu,
+            () => {
+              groups.value[groupRemoveIndex].items.splice(
+                groupItemRemoveIndex,
+                1
+              );
+            }
+          );
+        },
+      });
     }
   }
   function dragEnter(e: MouseEvent | TouchEvent): void {
     if (animationDragging.value) {
       if (e.target instanceof HTMLElement) {
         const target: HTMLElement = e.target;
-        target.classList.add("rd-group-overlay-hovered");
+        if (target.classList.contains("rd-overlay")) {
+          target.classList.add("rd-overlay-hovered");
+        } else {
+          target.classList.add("rd-group-overlay-hovered");
+        }
       }
     }
   }
@@ -509,6 +698,7 @@
       if (e.target instanceof HTMLElement) {
         const target: HTMLElement = e.target;
         target.classList.remove("rd-group-overlay-hovered");
+        target.classList.remove("rd-overlay-hovered");
       }
     }
   }
@@ -552,7 +742,7 @@
   .rd-component {
     position: relative;
     width: 100%;
-    padding: 1rem;
+    padding: 0 1rem 1rem 1rem;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -607,45 +797,6 @@
           margin-bottom: 0.75rem;
           flex-shrink: 0;
         }
-        .rd-group-overlay {
-          pointer-events: none;
-          touch-action: none;
-          z-index: 2;
-          position: absolute;
-          bottom: 0.75rem;
-          width: 100%;
-          height: calc(100% - 1.5rem);
-          border: 1px solid var(--primary-color);
-          box-sizing: border-box;
-          border-radius: 0.75rem;
-          color: var(--primary-color);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          transition: 0.25s opacity, 0.25s color, 0.25s filter;
-          opacity: 0;
-          filter: grayscale(1);
-          span.rd-group-overlay-message {
-            position: relative;
-            color: inherit;
-          }
-          &::before {
-            content: "";
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 0.75rem;
-            background: #fff7ee;
-          }
-          &.rd-group-overlay-active {
-            pointer-events: auto;
-            z-index: 4;
-            opacity: 1;
-            &.rd-group-overlay-hovered {
-              filter: grayscale(0);
-            }
-          }
-        }
         &::-webkit-scrollbar {
           display: none;
         }
@@ -662,6 +813,45 @@
         justify-content: space-between;
         align-items: center;
       }
+      .rd-group-overlay {
+        pointer-events: none;
+        touch-action: none;
+        z-index: 2;
+        position: absolute;
+        bottom: 4.25rem;
+        width: calc(100% - 1.5rem);
+        height: calc(100% - 8.5rem);
+        border: 1px solid var(--primary-color);
+        box-sizing: border-box;
+        border-radius: 0.75rem;
+        color: var(--primary-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: 0.25s opacity, 0.25s color, 0.25s filter;
+        opacity: 0;
+        filter: grayscale(1);
+        span.rd-group-overlay-message {
+          position: relative;
+          color: inherit;
+        }
+        &::before {
+          content: "";
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: 0.75rem;
+          background: #fff7ee;
+        }
+        &.rd-group-overlay-active {
+          pointer-events: auto;
+          z-index: 4;
+          opacity: 1;
+          &.rd-group-overlay-hovered {
+            filter: grayscale(0);
+          }
+        }
+      }
     }
     .rd-group-menu-decoy {
       pointer-events: none;
@@ -672,6 +862,46 @@
       width: calc(100% - 3.5rem - 2px);
       opacity: 0;
       box-shadow: var(--box-shadow);
+    }
+    .rd-overlay {
+      z-index: 3;
+      pointer-events: none;
+      touch-action: none;
+      z-index: 2;
+      position: fixed;
+      bottom: 1rem;
+      width: calc(100vw - 2rem);
+      height: 6.5rem;
+      border: 1px solid var(--primary-color);
+      box-sizing: border-box;
+      border-radius: 0.75rem;
+      color: var(--primary-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: 0.25s opacity, 0.25s color, 0.25s filter;
+      opacity: 0;
+      filter: grayscale(1);
+      span.rd-overlay-message {
+        position: relative;
+        color: inherit;
+      }
+      &::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 0.75rem;
+        background: #fff7ee;
+      }
+      &.rd-overlay-active {
+        pointer-events: auto;
+        z-index: 4;
+        opacity: 1;
+        &.rd-overlay-hovered {
+          filter: grayscale(0);
+        }
+      }
     }
     @media only screen and (min-width: 1025px) {
       height: 100%;
@@ -701,16 +931,17 @@
             position: relative;
             margin-bottom: 1rem;
           }
-          .rd-group-overlay {
-            top: 1rem;
-            height: calc(100% - 2rem);
-          }
         }
         .rd-group-footer {
           left: -1rem;
           width: calc(100% + 2rem);
           height: 4rem;
           padding: 1rem;
+        }
+        .rd-group-overlay {
+          bottom: 5rem;
+          width: calc(100% - 2rem);
+          height: calc(100% - 10rem);
         }
       }
       .rd-group-scroll-area {
@@ -728,6 +959,11 @@
       }
       .rd-group-menu-decoy {
         width: calc(18rem - 2px);
+      }
+      .rd-overlay {
+        bottom: 2rem;
+        left: calc((100vw - 20rem) / 2 - 10rem);
+        width: 19rem;
       }
     }
   }
