@@ -55,7 +55,10 @@
         </div>
       </div>
     </div>
-    <span class="rd-input-error rd-headline-6">
+    <span
+      v-if="typeof props.input.error === 'string'"
+      class="rd-input-error rd-headline-6"
+    >
       <span class="rd-text-wrapper">
         <span class="rd-text-container rd-text-container-up">
           <span class="rd-text">{{ inputError }}</span>

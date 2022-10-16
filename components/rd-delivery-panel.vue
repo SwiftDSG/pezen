@@ -76,23 +76,38 @@
         >Alamat tujuan</span
       >
       <div v-if="mode === 'Delivery'" class="rd-panel-card-row">
-        <div class="rd-panel-card" style="width: 10rem; margin-right: 0.75rem">
+        <div
+          v-for="(address, i) in dataRestaurant.addresses"
+          :key="i"
+          class="rd-panel-card"
+          style="width: 10rem; margin-right: 0.75rem"
+        >
           <div class="rd-panel-card-header">
             <div class="rd-panel-card-icon-container">
               <rd-svg class="rd-panel-card-icon" name="calendar" />
             </div>
-            <span class="rd-panel-card-tag rd-headline-6">15.6 km</span>
+            <span class="rd-panel-card-tag rd-headline-6">{{
+              address.distance.text
+            }}</span>
           </div>
           <div class="rd-panel-card-body">
-            <span class="rd-panel-card-value rd-headline-4">Rumah</span>
-            <span class="rd-panel-card-placeholder rd-caption-text"
-              >Test alone rest asd zxc</span
-            >
+            <span class="rd-panel-card-value rd-headline-4">{{
+              address.name
+            }}</span>
+            <span class="rd-panel-card-placeholder rd-caption-text">{{
+              address.address
+            }}</span>
           </div>
         </div>
         <div
           class="rd-panel-card"
           style="width: 10rem; border-color: var(--primary-color)"
+          @click="
+            emits('open-panel', {
+              state: 'show',
+              type: 'addresses-add',
+            })
+          "
         >
           <div class="rd-panel-card-overlay">
             <div class="rd-panel-card-icon-container">
@@ -129,7 +144,7 @@
     InputTimeOption,
   } from "~~/interfaces/general";
   import { MenuGroup } from "~~/interfaces/menus";
-  import { Restaurant, RestaurantMin } from "~~/interfaces/restaurants";
+  import { RestaurantDetails, RestaurantMin } from "~~/interfaces/restaurants";
 
   const { getRestaurantCheckout } = useRestaurants();
   const props = defineProps<{
@@ -142,7 +157,7 @@
   const emits = defineEmits(["exit", "open-panel"]);
 
   const dataLoading = ref<boolean>(true);
-  const dataRestaurant = ref<Restaurant>(null);
+  const dataRestaurant = ref<RestaurantDetails>(null);
 
   const panelState = ref<"idle" | "hide">("idle");
 
@@ -333,7 +348,11 @@
           flex-direction: column;
           span.rd-panel-card-placeholder {
             position: relative;
+            width: 100%;
             margin-top: 0.125rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
             &.rd-panel-card-placeholder-primary {
               cursor: pointer;
               color: var(--primary-color);

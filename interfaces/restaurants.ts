@@ -1,4 +1,5 @@
 import { Courier } from "./couriers"
+import { Position, PositionMin } from "./general"
 
 interface RestaurantOpeningHour {
   open: string
@@ -51,7 +52,6 @@ export interface Restaurant {
     count: number
     value: number
   }
-  couriers?: Courier[]
   create_date: Date
 }
 
@@ -65,4 +65,17 @@ export interface RestaurantDetails extends Restaurant {
     }
   }
   tables: { _id: string; table_number: string, capacity?: number }[]
+  couriers?: Courier[]
+  addresses?: {
+    address: string
+    distance: {
+      text: string
+      value: number
+    }
+    formatted_address: string[]
+    name: string
+    phone: string
+    position: PositionMin
+    type: string
+  }[]
 }

@@ -1,3 +1,4 @@
+import { Position, PositionMin } from "./general"
 import { UserMin } from "./users"
 
 export interface CourierService {
@@ -31,10 +32,7 @@ export interface Courier {
   type: string
   address: string
   formatted_address: string[]
-  position: {
-    coordinates: number[]
-    type: string
-  }
+  position: PositionMin
   services: CourierService[]
   members: UserMin[]
   create_date: Date

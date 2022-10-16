@@ -2,7 +2,8 @@
 export default defineNuxtConfig({
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:8000'
+      apiBase: process.env.API_URL || 'http://localhost:8000',
+      mapId: process.env.GOOGLE_MAP_ID || ''
     }
   },
   app: {
@@ -20,8 +21,12 @@ export default defineNuxtConfig({
         { name: 'googlebot', content: 'notranslate' },
         { name: 'msapplication-TileColor', content: '#ffa84c' },
         { name: 'theme-color', content: '#ffffff' },
-        { hid: 'description', name: 'description', content: 'Pezen | Aplikasi untuk memesan makanan (food), katering (catering), reservasi (booking) dan jasa boga lainnya secara online.' }
+        { hid: 'description', name: 'description', content: 'Pezen | Aplikasi untuk memesan makanan (food), katering (catering), reservasi (booking) dan jasa boga lainnya secara online.' },
+        { rel: 'preconnect', href: process.env.API_URL, crossorigin: true }
       ],
+      script: [
+        { src: `https://maps.googleapis.com/maps/api/js?key=${process.env.GOOGLE_API}&map_ids=${process.env.GOOGLE_MAP_ID}`, defer: true }
+      ]
     },
   },
   css: [

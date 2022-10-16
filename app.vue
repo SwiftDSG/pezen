@@ -91,6 +91,12 @@
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
     />
+    <rd-addresses-add-panel
+      v-if="panelOpened === 'addresses-add'"
+      :state="panelState"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
+    />
     <rd-booking-panel
       v-if="panelOpened === 'booking'"
       :state="panelState"
@@ -103,7 +109,7 @@
       :state="panelState"
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
-      @change-page="changeHandler"
+      @open-panel="panelHandler"
     />
     <rd-search-panel
       v-if="panelOpened === 'search'"
@@ -241,17 +247,15 @@
   }
   function panelHandler({ state, type, data }: PanelHandlerOption): void {
     if (state === "show") {
-      panelSequence.value.unshift(type);
-      if (panelSequence.value.length === 1) {
+      if (panelSequence.value.length === 0) {
         panelState.value = "idle";
-        panelData.value.unshift(data);
+        panelSequence.value.unshift(type);
+        panelData.value.unshift(data || {});
         panelOpened.value = panelSequence.value[0];
       } else {
         panelState.value = "hide";
-        setTimeout(() => {
-          panelData.value.unshift(data);
-          panelOpened.value = panelSequence.value[0];
-        }, 250);
+        panelSequence.value.push(type);
+        panelData.value.push(data || {});
       }
       if (type === "search") {
         const rdInput: HTMLInputElement =
@@ -259,25 +263,32 @@
         if (rdInput) rdInput.focus();
       }
     } else {
+      panelOpened.value = null;
+      let sequence: PanelHandlerOption["type"] = null;
+      let payload: PanelHandlerOption["data"] = null;
       if (panelState.value === "hide") {
         panelState.value = "idle";
-        if (panelSequence.value[0] === panelSequence.value[1]) {
-          panelData.value.splice(1, 1);
-          panelSequence.value.splice(1, 1);
+        sequence = panelSequence.value.pop();
+        payload = panelData.value.pop();
+        if (sequence === panelSequence.value[0]) {
+          panelData.value.splice(0, 1);
+          panelSequence.value.splice(0, 1);
         }
       } else {
         panelState.value = "hide";
         panelData.value.splice(0, 1);
         panelSequence.value.splice(0, 1);
-        if (panelSequence.value[0]) {
-          setTimeout(() => {
-            panelOpened.value = panelSequence.value[0];
-          }, 50);
-        }
+        sequence = panelSequence.value.pop();
+        payload = panelData.value.pop();
       }
-      setTimeout(() => {
-        panelOpened.value = null;
-      }, 500);
+      if (sequence) {
+        setTimeout(() => {
+          panelState.value = "idle";
+          panelSequence.value.unshift(sequence);
+          panelData.value.unshift(payload || {});
+          panelOpened.value = panelSequence.value[0];
+        }, 50);
+      }
     }
   }
   function scrollHandler(): void {

@@ -59,6 +59,7 @@
 
 <style lang="scss" scoped>
   .rd-component {
+    pointer-events: none;
     position: relative;
     width: 10rem;
     height: 2rem;

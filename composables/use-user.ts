@@ -99,6 +99,15 @@ export default function () {
     return result
   }
 
+  const addAddress = async (payload: { position: { lat: number, lng: number }, name: string, type: string, address: string, phone: string }): Promise<string> => {
+    const response: Response = await $fetch(`${config.public.apiBase}/users/add-address`, 'put', JSON.stringify(payload))
+    if (response.status !== 200) throw new Error(await response.text())
+
+    const result: string = await response.text()
+
+    return result
+  }
+
   return {
     user,
     login,
@@ -106,6 +115,7 @@ export default function () {
     refresh,
     sendVerificationCode,
     verifyEmail,
-    createAccount
+    createAccount,
+    addAddress
   }
 }

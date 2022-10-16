@@ -137,3 +137,8 @@ export interface RestaurantMenusResponse {
   categories: RestaurantMenuCategories[]
   packs?: MenuPack[]
 }
+
+export interface PositionMin {
+  coordinates: number[]
+  type: string
+}

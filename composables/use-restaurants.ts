@@ -55,10 +55,10 @@ export default function () {
     return result
   }
 
-  const getRestaurantCheckout = async (code: string): Promise<Restaurant> => {
+  const getRestaurantCheckout = async (code: string): Promise<RestaurantDetails> => {
     const response: Response = await $fetch(`${config.public.apiBase}/restaurants/checkout/${code}`, 'get')
 
-    const result: Restaurant = await response.json()
+    const result: RestaurantDetails = await response.json()
     return result
   }
 
