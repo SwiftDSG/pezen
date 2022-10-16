@@ -1,5 +1,5 @@
 import { RestaurantMenusResponse } from "~~/interfaces/general";
-import { RestaurantDetails, RestaurantType } from "~~/interfaces/restaurants";
+import { Restaurant, RestaurantDetails, RestaurantType } from "~~/interfaces/restaurants";
 
 
 export default function () {
@@ -55,6 +55,13 @@ export default function () {
     return result
   }
 
+  const getRestaurantCheckout = async (code: string): Promise<Restaurant> => {
+    const response: Response = await $fetch(`${config.public.apiBase}/restaurants/checkout/${code}`, 'get')
 
-  return { restaurantTypes, checkRestaurant, checkRestaurantAvailability, getRestaurantDetails, getRestaurantMenus }
+    const result: Restaurant = await response.json()
+    return result
+  }
+
+
+  return { restaurantTypes, checkRestaurant, checkRestaurantAvailability, getRestaurantDetails, getRestaurantMenus, getRestaurantCheckout }
 }

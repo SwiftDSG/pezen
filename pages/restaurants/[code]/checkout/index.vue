@@ -20,27 +20,85 @@
         <rd-menu-arranger
           v-if="cart.method.type === 'pre-order'"
           :data="cart.items"
+          @note="editNoteBackdrop"
+          @add="addQuantity"
+          @subtract="subtractQuantity"
+          @change="groupsHandler"
+          @open-panel="deliveryHandler"
         />
       </div>
     </div>
     <div class="rd-panel"></div>
+    <rd-backdrop
+      v-if="backdropIndex !== -1"
+      class="rd-backdrop"
+      :state="backdropState"
+      @exit="
+        backdropState = 'idle';
+        backdropIndex = -1;
+      "
+    >
+      <div class="rd-backdrop-header">
+        <span class="rd-backdrop-title rd-headline-3">Metode pemesanan</span>
+      </div>
+      <div v-if="backdropIndex === 0" class="rd-backdrop-body">
+        <div class="rd-backdrop-input-wrapper">
+          <rd-input-textarea class="rd-backdrop-input" :input="noteInput" />
+        </div>
+        <div
+          class="rd-backdrop-input-wrapper"
+          v-if="
+            (cart.method.type === 'dine-in' && cart.method.table) ||
+            (cart.method.type === 'booking' && cart.method.guest)
+          "
+        >
+          <span class="rd-backdrop-input-label rd-headline-6">Take away?</span>
+          <rd-input-toggle :input="takeAwayInput" />
+        </div>
+        <div class="rd-backdrop-button-wrapper">
+          <rd-input-button
+            class="rd-backdrop-button"
+            label="simpan"
+            @clicked="addNote"
+          />
+        </div>
+      </div>
+    </rd-backdrop>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { ComputedRef } from "vue";
+  import { InputOption } from "~~/interfaces/general";
+  import { MenuCart, MenuGroup } from "~~/interfaces/menus";
+  import { OrderCart } from "~~/interfaces/orders";
 
+  definePageMeta({
+    middleware: ["auth"],
+  });
   const route = useRoute();
   const { viewMode } = useMain();
   const { cart, loadCart } = useOrders();
   const emits = defineEmits(["open-panel", "change-page"]);
 
+  const backdropState = ref<"hide" | "idle">("idle");
+  const backdropIndex = ref<number>(-1);
+  const backdropData = ref<MenuCart>(null);
+
   const scrollValue = ref<number>(0);
   const scrollThreshold = ref<number>(0);
 
-  function scrollHandler(): void {
-    scrollValue.value = document.documentElement.scrollTop;
-  }
+  const cartGroups = ref<MenuGroup[]>(null);
+
+  const noteInput = ref<InputOption>({
+    name: "note",
+    placeholder: "Ekstra pedas!",
+    label: "Catatan",
+    model: "",
+  });
+  const takeAwayInput = ref<{ model: boolean }>({
+    model: false,
+  });
 
   const rem: ComputedRef<number> = computed((): number =>
     typeof getComputedStyle === "function"
@@ -49,6 +107,76 @@
   );
   const headerActive: ComputedRef<boolean> = computed(
     (): boolean => scrollValue.value >= scrollThreshold.value
+  );
+  const note: ComputedRef<string> = computed(() => noteInput.value.model);
+  const takeAway: ComputedRef<boolean> = computed(
+    () => takeAwayInput.value.model
+  );
+
+  const cartGroupItems: ComputedRef<OrderCart["items"]> = computed(() =>
+    cartGroups.value?.map((a) => a.items).flat()
+  );
+
+  function scrollHandler(): void {
+    scrollValue.value = document.documentElement.scrollTop;
+  }
+
+  function editNoteBackdrop(data: MenuCart): void {
+    backdropIndex.value = 0;
+    backdropData.value = data;
+    if (data.take_away) takeAwayInput.value.model = data.take_away;
+    else takeAwayInput.value.model = false;
+    if (data.note) noteInput.value.model = data.note;
+    else noteInput.value.model = "";
+  }
+
+  function addNote(): void {
+    const index: number = cart.value?.items.findIndex(
+      (a) => a._id === backdropData.value?._id
+    );
+    if (index > -1) {
+      cart.value.items[index].note = note.value;
+      cart.value.items[index].take_away = takeAway.value;
+    }
+    backdropState.value = "hide";
+  }
+  function addQuantity(data: MenuCart): void {
+    const index: number = cart.value?.items.findIndex(
+      (a) => a._id === data?._id
+    );
+    if (index > -1) {
+      cart.value.items[index].quantity++;
+    }
+  }
+  function subtractQuantity(data: MenuCart): void {
+    const index: number = cart.value?.items.findIndex(
+      (a) => a._id === data?._id
+    );
+    if (index > -1) {
+      cart.value.items[index].quantity--;
+    }
+  }
+
+  function groupsHandler(data: MenuGroup[]): void {
+    cartGroups.value = data;
+  }
+
+  function deliveryHandler(data: MenuGroup): void {
+    emits("open-panel", {
+      state: "show",
+      type: "delivery",
+      data: {
+        group: data,
+        restaurant: cart.value.restaurant,
+      },
+    });
+  }
+
+  watch(
+    () => cartGroupItems.value,
+    (val) => {
+      cart.value.items = [...val];
+    }
   );
 
   onMounted(() => {
@@ -156,6 +284,52 @@
       left: 0;
       background: var(--background-depth-one-color);
     }
+    .rd-backdrop {
+      .rd-backdrop-header {
+        position: relative;
+        width: 100%;
+        margin: 1rem 0;
+        display: flex;
+        .rd-backdrop-title {
+          position: relative;
+          width: 100%;
+          height: 1rem;
+          display: flex;
+          flex-shrink: 0;
+          align-items: center;
+        }
+      }
+      .rd-backdrop-body {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        .rd-backdrop-input-wrapper {
+          position: relative;
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          span.rd-backdrop-input-label {
+            position: relative;
+            opacity: 0.5;
+          }
+          .rd-backdrop-input {
+            width: 100%;
+          }
+        }
+        .rd-backdrop-button-wrapper {
+          position: relative;
+          width: 100%;
+          margin-top: 2rem;
+          display: flex;
+          flex-direction: column;
+          .rd-backdrop-button {
+            width: 100%;
+          }
+        }
+      }
+    }
     @media only screen and (min-width: 1025px) {
       height: 100vh;
       flex-direction: row;
@@ -196,6 +370,33 @@
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
+      }
+      .rd-backdrop {
+        height: 100%;
+        padding: 0 2rem;
+        .rd-backdrop-body {
+          height: 100%;
+          .rd-backdrop-button-wrapper {
+            position: absolute;
+            left: -2rem;
+            bottom: 0;
+            width: calc(100% + 4rem);
+            height: 6rem;
+            margin: 0;
+            padding: 2rem 2rem 2rem 2rem;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            &::before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 1px;
+              background: var(--border-color);
+            }
+          }
+        }
       }
     }
   }

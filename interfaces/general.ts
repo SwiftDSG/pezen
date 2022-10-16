@@ -45,6 +45,11 @@ export interface SearchData {
   }[]
 }
 
+export interface InputSwitchOption {
+  options: [string, string];
+  model: string;
+  disabled?: boolean;
+}
 export interface InputFileOption {
   disabled: boolean;
   file: File;
@@ -73,8 +78,8 @@ export interface InputOption {
   })[]
 }
 export interface InputDateOption {
-  name: string
-  placeholder: string
+  name?: string
+  placeholder?: string
   model: string
   value?: string
   icon?: string
@@ -82,6 +87,7 @@ export interface InputDateOption {
   error?: string
   disabled?: boolean
   threshold?: Date
+  available?: number[]
 }
 export interface InputCodeOption {
   name: string
@@ -94,6 +100,11 @@ export interface InputSearchOption {
   placeholder: string
   model: string
   type?: 'primary' | 'secondary'
+}
+export interface InputTimeOption {
+  model: string
+  opening_hours?: Restaurant['opening_hours']
+  date?: Date
 }
 export interface InputGeneric<T> {
   name: string

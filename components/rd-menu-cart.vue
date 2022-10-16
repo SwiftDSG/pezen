@@ -43,21 +43,38 @@
             `Rp ${(data.markup_price || data.price).toLocaleString("de-DE")}`
           }}</span>
         </div>
+        <div v-if="data.take_away" class="rd-menu-tag rd-menu-tag-take-away">
+          <div class="rd-menu-tag-icon-container">
+            <rd-svg
+              class="rd-menu-tag-icon"
+              name="shopping-filled"
+              color="primary"
+            />
+          </div>
+          <span class="rd-menu-tag-name rd-headline-6">take away</span>
+        </div>
+        <div v-if="data.note" class="rd-menu-tag rd-menu-tag-note">
+          <div class="rd-menu-tag-icon-container">
+            <rd-svg
+              class="rd-menu-tag-icon"
+              name="note-filled"
+              color="primary"
+            />
+          </div>
+          <span class="rd-menu-tag-name rd-headline-6">{{ data.note }}</span>
+        </div>
       </div>
       <div
         class="rd-menu-quantity-container"
         :class="data ? 'rd-menu-quantity-container-active' : ''"
       >
         <div class="rd-menu-quantity rd-menu-quantity-add">
-          <rd-input-button-smaller icon="plus" @clicked="emits('add', data)" />
+          <rd-input-button-smaller icon="plus" @clicked="emit('add')" />
         </div>
         <div class="rd-menu-quantity rd-menu-quantity-subtract">
-          <rd-input-button-smaller
-            icon="minus"
-            @clicked="emits('subtract', data)"
-          />
+          <rd-input-button-smaller icon="minus" @clicked="emit('subtract')" />
         </div>
-        <div class="rd-menu-quantity-main" @click="emits('add', data)">
+        <div class="rd-menu-quantity-main">
           <span class="rd-menu-quantity-main-quantity rd-headline-6">{{
             data.quantity
           }}</span>
@@ -79,7 +96,7 @@
   const props = defineProps<{
     data: MenuCart;
   }>();
-  const emits = defineEmits(["add", "subtract", "note", "delete", "drag"]);
+  const emits = defineEmits(["change", "drag"]);
 
   const animationAction = ref<"note" | "delete">(null);
   const animationState = ref<"active" | "inactive">("inactive");
@@ -194,10 +211,13 @@
     }
   }
 
-  function emit(name: "note" | "delete") {
+  function emit(name: "add" | "subtract" | "note" | "delete") {
     animationState.value = "inactive";
     dragEnd();
-    emits(name, props.data);
+    emits("change", {
+      name,
+      menu: props.data,
+    });
   }
 
   onMounted(() => {
@@ -219,7 +239,7 @@
     position: relative;
     width: 100%;
     height: calc(5.5rem + 2px) !important;
-    overflow: hidden !important;
+    // overflow-x: hidden !important;
     display: flex;
     justify-content: space-between;
     .rd-menu-actions-container {
@@ -233,6 +253,7 @@
       justify-content: space-between;
       align-items: center;
       .rd-menu-action {
+        cursor: pointer;
         position: relative;
         width: 4rem;
         height: 4rem;
@@ -350,10 +371,62 @@
           flex-direction: column;
           span.rd-menu-name {
             position: relative;
+            width: 100%;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
           }
           span.rd-menu-price {
             position: relative;
             margin-top: 0.125rem;
+          }
+        }
+        .rd-menu-tag {
+          position: absolute;
+          left: 0.75rem;
+          max-width: calc(100% - 1.5rem);
+          height: 1rem;
+          padding: 0 0.25rem 0 0;
+          border-radius: 0.5rem;
+          display: flex;
+          flex-shrink: 0;
+          align-items: center;
+          .rd-menu-tag-icon-container {
+            position: relative;
+            width: 1rem;
+            height: 1rem;
+            padding: 0 0.25rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-shrink: 0;
+            justify-content: center;
+            align-items: center;
+          }
+          span.rd-menu-tag-name {
+            position: relative;
+            width: 100%;
+            color: var(--primary-color);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
+          &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            background: var(--primary-color);
+            opacity: 0.1;
+          }
+          &.rd-menu-tag-take-away {
+            top: 0;
+            filter: grayscale(1);
+          }
+          &.rd-menu-tag-note {
+            bottom: 0;
           }
         }
       }
@@ -366,7 +439,6 @@
         justify-content: center;
         align-items: center;
         .rd-menu-quantity-main {
-          cursor: pointer;
           position: relative;
           width: 2rem;
           height: 2rem;

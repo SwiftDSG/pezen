@@ -1,3 +1,5 @@
+import { Courier } from "./couriers"
+
 interface RestaurantOpeningHour {
   open: string
   close: string
@@ -49,6 +51,7 @@ export interface Restaurant {
     count: number
     value: number
   }
+  couriers?: Courier[]
   create_date: Date
 }
 

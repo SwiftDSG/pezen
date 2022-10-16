@@ -91,18 +91,25 @@
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
     />
-    <rd-search-panel
-      v-if="panelOpened === 'search'"
-      :state="panelState"
-      :data="panelData[0]"
-      @exit="panelHandler({ state: 'hide' })"
-    />
     <rd-booking-panel
       v-if="panelOpened === 'booking'"
       :state="panelState"
       :data="panelData[0]"
       @exit="panelHandler({ state: 'hide' })"
       @change-page="changeHandler"
+    />
+    <rd-delivery-panel
+      v-if="panelOpened === 'delivery'"
+      :state="panelState"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
+      @change-page="changeHandler"
+    />
+    <rd-search-panel
+      v-if="panelOpened === 'search'"
+      :state="panelState"
+      :data="panelData[0]"
+      @exit="panelHandler({ state: 'hide' })"
     />
     <rd-scanner-panel
       v-if="panelOpened === 'scanner'"
@@ -135,6 +142,7 @@
     | "addresses"
     | "addresses-add"
     | "booking"
+    | "delivery"
     | "search"
     | "scanner";
 

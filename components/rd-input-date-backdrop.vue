@@ -1,41 +1,17 @@
 <template>
-  <div
-    ref="rdInputComponent"
-    class="rd-input-component"
-    :class="props.input.error ? 'rd-input-error-active' : ''"
-  >
-    <label v-if="props.input.label" class="rd-input-label rd-headline-6">{{
-      props.input.label
-    }}</label>
-    <div class="rd-input-container">
-      <div v-if="props.input.icon" class="rd-input-icon-container">
-        <rd-svg :name="props.input.icon" :color="'secondary'" />
-      </div>
-      <input
-        class="rd-input rd-body-text"
-        :placeholder="props.input.placeholder"
-        ref="rdInput"
-        readonly
-        :name="props.input.name"
-        @focusin="dropDownHandler('open')"
-        @input="updateModel"
-      />
-      <div class="rd-input-border"></div>
-      <div
-        v-if="dropDownOpened"
-        ref="rdInputDate"
-        class="rd-input-date"
-        tabindex="-1"
-        :class="dropDownOpened ? 'rd-input-date-opened' : ''"
-        @focusout="dropDownHandler('close')"
-      >
-        <div class="rd-input-date-controls-container">
-          <div class="rd-input-date-controls-indicator-wrapper">
+  <rd-backdrop class="rd-backdrop" :state="backdropState" @exit="emits('exit')">
+    <div class="rd-backdrop-header">
+      <span class="rd-backdrop-title rd-headline-3">Pilih tanggal</span>
+    </div>
+    <div ref="rdBackdropBody" class="rd-backdrop-body">
+      <div class="rd-backdrop-date-wrapper">
+        <div class="rd-backdrop-date-controls-container">
+          <div class="rd-backdrop-date-controls-indicator-wrapper">
             <div
-              class="rd-input-date-controls-indicator rd-input-date-controls-indicator-prev"
+              class="rd-backdrop-date-controls-indicator rd-backdrop-date-controls-indicator-prev"
             >
               <span
-                class="rd-input-date-controls-indicator-text rd-headline-5"
+                class="rd-backdrop-date-controls-indicator-text rd-headline-5"
                 >{{
                   monthHandler(
                     selectedMonth.month === 0
@@ -47,20 +23,20 @@
               >
             </div>
             <div
-              class="rd-input-date-controls-indicator rd-input-date-controls-indicator-prev"
+              class="rd-backdrop-date-controls-indicator rd-backdrop-date-controls-indicator-prev"
             >
               <span
-                class="rd-input-date-controls-indicator-text rd-headline-5"
+                class="rd-backdrop-date-controls-indicator-text rd-headline-5"
                 >{{
                   monthHandler(selectedMonth.year, selectedMonth.month)
                 }}</span
               >
             </div>
             <div
-              class="rd-input-date-controls-indicator rd-input-date-controls-indicator-prev"
+              class="rd-backdrop-date-controls-indicator rd-backdrop-date-controls-indicator-prev"
             >
               <span
-                class="rd-input-date-controls-indicator-text rd-headline-5"
+                class="rd-backdrop-date-controls-indicator-text rd-headline-5"
                 >{{
                   monthHandler(
                     selectedMonth.month === 11
@@ -72,7 +48,7 @@
               >
             </div>
           </div>
-          <div class="rd-input-date-controls">
+          <div class="rd-backdrop-date-controls">
             <rd-input-button-small
               class="rd-panel-button"
               :icon="'chevron-left'"
@@ -95,23 +71,23 @@
             />
           </div>
         </div>
-        <div class="rd-input-date-days-container">
+        <div class="rd-backdrop-date-days-container">
           <span
             v-for="(day, i) in days"
             :key="i"
-            class="rd-input-date-day rd-caption-text"
+            class="rd-backdrop-date-day rd-caption-text"
             >{{ day.slice(0, 1) }}</span
           >
         </div>
-        <div class="rd-input-date-weeks-wrapper">
-          <div class="rd-input-date-weeks rd-input-date-weeks-prev">
-            <div v-for="i in 6" :key="i" class="rd-input-date-week">
+        <div class="rd-backdrop-date-weeks-wrapper">
+          <div class="rd-backdrop-date-weeks rd-backdrop-date-weeks-prev">
+            <div v-for="i in 6" :key="i" class="rd-backdrop-date-week">
               <div
                 v-for="j in 7"
                 :key="j"
-                class="rd-input-date-week-day"
+                class="rd-backdrop-date-week-day"
                 :class="
-                  props.input.threshold
+                  props.input.threshold || props.input.available?.length
                     ? isYesterday(
                         selectedMonth.month === 0
                           ? selectedMonth.year - 1
@@ -121,7 +97,7 @@
                           : selectedMonth.month - 1,
                         prevDays[i - 1][j - 1]
                       )
-                      ? 'rd-input-date-week-day-disabled'
+                      ? 'rd-backdrop-date-week-day-disabled'
                       : ''
                     : ''
                 "
@@ -136,11 +112,11 @@
                       prevDays[i - 1][j - 1]
                     )
                   "
-                  class="rd-input-date-week-day-overlay"
+                  class="rd-backdrop-date-week-day-overlay"
                 ></div>
                 <span
                   v-if="prevDays[i - 1][j - 1]"
-                  class="rd-input-date-week-day-date rd-headline-6"
+                  class="rd-backdrop-date-week-day-date rd-headline-6"
                   :class="
                     isSelected(
                       selectedMonth.month === 0
@@ -149,29 +125,29 @@
                       selectedMonth.month === 0 ? 11 : selectedMonth.month - 1,
                       prevDays[i - 1][j - 1]
                     )
-                      ? 'rd-input-date-week-day-date-selected'
+                      ? 'rd-backdrop-date-week-day-date-selected'
                       : ''
                   "
                   >{{ prevDays[i - 1][j - 1] }}</span
                 >
-                <span v-else class="rd-input-date-week-day-dot"></span>
+                <span v-else class="rd-backdrop-date-week-day-dot"></span>
               </div>
             </div>
           </div>
-          <div class="rd-input-date-weeks rd-input-date-weeks-current">
-            <div v-for="i in 6" :key="i" class="rd-input-date-week">
+          <div class="rd-backdrop-date-weeks rd-backdrop-date-weeks-current">
+            <div v-for="i in 6" :key="i" class="rd-backdrop-date-week">
               <div
                 v-for="j in 7"
                 :key="j"
-                class="rd-input-date-week-day"
+                class="rd-backdrop-date-week-day"
                 :class="
-                  props.input.threshold
+                  props.input.threshold || props.input.available?.length
                     ? isYesterday(
                         selectedMonth.year,
                         selectedMonth.month,
                         currentDays[i - 1][j - 1]
                       )
-                      ? 'rd-input-date-week-day-disabled'
+                      ? 'rd-backdrop-date-week-day-disabled'
                       : ''
                     : ''
                 "
@@ -184,35 +160,35 @@
                       currentDays[i - 1][j - 1]
                     )
                   "
-                  class="rd-input-date-week-day-overlay"
+                  class="rd-backdrop-date-week-day-overlay"
                 ></div>
                 <span
                   v-if="currentDays[i - 1][j - 1]"
-                  class="rd-input-date-week-day-date rd-headline-6"
+                  class="rd-backdrop-date-week-day-date rd-headline-6"
                   :class="
                     isSelected(
                       selectedMonth.year,
                       selectedMonth.month,
                       currentDays[i - 1][j - 1]
                     )
-                      ? 'rd-input-date-week-day-date-selected'
+                      ? 'rd-backdrop-date-week-day-date-selected'
                       : ''
                   "
                   @click="selectOption(currentDays[i - 1][j - 1])"
                   >{{ currentDays[i - 1][j - 1] }}</span
                 >
-                <span v-else class="rd-input-date-week-day-dot"></span>
+                <span v-else class="rd-backdrop-date-week-day-dot"></span>
               </div>
             </div>
           </div>
-          <div class="rd-input-date-weeks rd-input-date-weeks-next">
-            <div v-for="i in 6" :key="i" class="rd-input-date-week">
+          <div class="rd-backdrop-date-weeks rd-backdrop-date-weeks-next">
+            <div v-for="i in 6" :key="i" class="rd-backdrop-date-week">
               <div
                 v-for="j in 7"
                 :key="j"
-                class="rd-input-date-week-day"
+                class="rd-backdrop-date-week-day"
                 :class="
-                  props.input.threshold
+                  props.input.threshold || props.input.available?.length
                     ? isYesterday(
                         selectedMonth.month === 11
                           ? selectedMonth.year + 1
@@ -222,7 +198,7 @@
                           : selectedMonth.month + 1,
                         nextDays[i - 1][j - 1]
                       )
-                      ? 'rd-input-date-week-day-disabled'
+                      ? 'rd-backdrop-date-week-day-disabled'
                       : ''
                     : ''
                 "
@@ -237,11 +213,11 @@
                       nextDays[i - 1][j - 1]
                     )
                   "
-                  class="rd-input-date-week-day-overlay"
+                  class="rd-backdrop-date-week-day-overlay"
                 ></div>
                 <span
                   v-if="nextDays[i - 1][j - 1]"
-                  class="rd-input-date-week-day-date rd-headline-6"
+                  class="rd-backdrop-date-week-day-date rd-headline-6"
                   :class="
                     isSelected(
                       selectedMonth.month === 11
@@ -250,33 +226,29 @@
                       selectedMonth.month === 11 ? 0 : selectedMonth.month + 1,
                       nextDays[i - 1][j - 1]
                     )
-                      ? 'rd-input-date-week-day-date-selected'
+                      ? 'rd-backdrop-date-week-day-date-selected'
                       : ''
                   "
                   >{{ nextDays[i - 1][j - 1] }}</span
                 >
-                <span v-else class="rd-input-date-week-day-dot"></span>
+                <span v-else class="rd-backdrop-date-week-day-dot"></span>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <!-- <div class="rd-backdrop-button-wrapper">
+        <rd-input-button class="rd-backdrop-button" label="simpan" />
+      </div> -->
     </div>
-    <span class="rd-input-error rd-headline-6">
-      <span class="rd-text-wrapper">
-        <span class="rd-text-container rd-text-container-up">
-          <span class="rd-text">{{ inputError }}</span>
-        </span>
-      </span>
-    </span>
-  </div>
+  </rd-backdrop>
 </template>
 
 <script lang="ts" setup>
   import gsap from "gsap";
   import { ComputedRef } from "vue";
 
-  import { InputDateOption } from "~~/interfaces/general.js";
+  import { InputDateOption } from "~~/interfaces/general";
 
   interface DateObject {
     date?: number;
@@ -284,29 +256,26 @@
     month: number;
   }
 
+  const emits = defineEmits(["exit"]);
   const props = defineProps<{
     input: InputDateOption;
   }>();
 
-  const rdInputDate = ref<HTMLDivElement>(null);
-  const rdInput = ref<HTMLInputElement>(null);
+  const rdBackdropBody = ref<HTMLDivElement>(null);
 
-  const inputError = ref<string>(props.input.error);
-  const inputModel = ref<string>("");
-  const inputValue = ref<string>("");
+  const backdropState = ref<"idle" | "hide">("idle");
 
-  const dropDownOpened = ref<boolean>(false);
-
-  const selectedMonth = ref<DateObject>(null);
-  const selectedDate = ref<DateObject>({
-    date: -1,
-    month: -1,
-    year: -1,
-  });
   const todayDate = ref<DateObject>({
     date: new Date().getDate(),
     month: new Date().getMonth(),
     year: new Date().getFullYear(),
+  });
+
+  const selectedMonth = ref<DateObject>(todayDate.value);
+  const selectedDate = ref<DateObject>({
+    date: -1,
+    month: -1,
+    year: -1,
   });
 
   const currentDays: ComputedRef<number[][]> = computed(() => {
@@ -350,76 +319,8 @@
     "Desember",
   ];
 
-  const animate = {
-    dropDownOpen(rdInputDate: HTMLElement, cb?: () => void): void {
-      const tl: GSAPTimeline = gsap.timeline({
-        onComplete() {
-          if (cb) cb();
-        },
-      });
-
-      tl.to(rdInputDate, {
-        scale: 1,
-        opacity: 1,
-        duration: 0.25,
-        ease: "power2.inOut",
-      });
-    },
-    dropDownClose(rdInputDate: HTMLElement, cb?: () => void): void {
-      const tl: GSAPTimeline = gsap.timeline({
-        onComplete() {
-          if (cb) cb();
-        },
-      });
-
-      tl.to(rdInputDate, {
-        scale: 1.125,
-        opacity: 0,
-        duration: 0.25,
-        ease: "power2.inOut",
-      });
-    },
-  };
-
-  function dropDownHandler(state: "open" | "close"): void {
-    if (state === "open") {
-      dropDownOpened.value = true;
-      setTimeout(() => {
-        rdInputDate.value.focus();
-        animate.dropDownOpen(rdInputDate.value);
-        const { bottom, right }: DOMRect =
-          rdInputDate.value.getBoundingClientRect();
-        gsap.to(rdInputDate.value, {
-          top: window.innerHeight - bottom < 0 ? "auto" : "100%",
-          bottom: window.innerHeight - bottom < 0 ? "100%" : "auto",
-          right: window.innerWidth - right < 0 ? "0" : "auto",
-          left: window.innerWidth - right < 0 ? "auto" : "0",
-          duration: 0,
-        });
-      }, 100);
-    } else {
-      if (dropDownOpened.value) {
-        animate.dropDownClose(rdInputDate.value, () => {
-          dropDownOpened.value = false;
-        });
-      }
-    }
-  }
-
-  function updateModel({ target }: InputEvent): void {
-    if (target instanceof HTMLInputElement) {
-      inputModel.value = target.value;
-      dropDownHandler("open");
-    }
-  }
-
-  function selectOption(date: number): void {
-    selectedDate.value = {
-      date,
-      month: selectedMonth.value.month,
-      year: selectedMonth.value.year,
-    };
-    dropDownHandler("close");
+  function exit(): void {
+    backdropState.value = "hide";
   }
 
   function monthHandler(y: number, m: number): string {
@@ -428,7 +329,10 @@
 
   function isYesterday(y: number, m: number, d: number): boolean {
     const day: Date = new Date(y, m, d);
-    return day.getTime() < props.input.threshold.getTime();
+    return (
+      props.input.available?.indexOf(day.getDay()) === -1 ||
+      day.getTime() < props.input.threshold?.getTime()
+    );
   }
   function isSameDay(y: number, m: number, d: number): boolean {
     return (
@@ -448,12 +352,23 @@
     );
   }
 
+  function selectOption(date: number): void {
+    selectedDate.value = {
+      date,
+      month: selectedMonth.value.month,
+      year: selectedMonth.value.year,
+    };
+    exit();
+  }
+
   function changeMonth(dir: "left" | "right"): void {
-    const rdInputDateControlsIndicator: HTMLElement[] = gsap.utils.toArray(
-      rdInputDate.value.querySelectorAll(".rd-input-date-controls-indicator")
+    const rdBackdropBodyControlsIndicator: HTMLElement[] = gsap.utils.toArray(
+      rdBackdropBody.value.querySelectorAll(
+        ".rd-backdrop-date-controls-indicator"
+      )
     );
-    const rdInputDateWeeks: HTMLElement[] = gsap.utils.toArray(
-      rdInputDate.value.querySelectorAll(".rd-input-date-weeks")
+    const rdBackdropBodyWeeks: HTMLElement[] = gsap.utils.toArray(
+      rdBackdropBody.value.querySelectorAll(".rd-backdrop-date-weeks")
     );
 
     const tl: GSAPTimeline = gsap.timeline({
@@ -481,22 +396,22 @@
                 : selectedMonth.value.year,
           };
         }
-        gsap.to(rdInputDateControlsIndicator, {
+        gsap.to(rdBackdropBodyControlsIndicator, {
           y: 0,
           duration: 0,
         });
-        gsap.to(rdInputDateWeeks, {
+        gsap.to(rdBackdropBodyWeeks, {
           x: 0,
           duration: 0,
         });
       },
     });
 
-    tl.to(rdInputDateControlsIndicator, {
+    tl.to(rdBackdropBodyControlsIndicator, {
       y: dir === "left" ? "2rem" : "-2rem",
       duration: 0.25,
     }).to(
-      rdInputDateWeeks,
+      rdBackdropBodyWeeks,
       {
         x: dir === "left" ? "100%" : "-100%",
         duration: 0.25,
@@ -527,12 +442,6 @@
   }
 
   watch(
-    () => props.input.error,
-    (val: string) => {
-      if (val) inputError.value = val;
-    }
-  );
-  watch(
     () => props.input.value,
     (val: string, oldVal: string) => {
       if (val && val !== oldVal) {
@@ -552,8 +461,8 @@
       const str: string = `${date.toString().padStart(2, "0")}-${(month + 1)
         .toString()
         .padStart(2, "0")}-${year}`;
-      inputModel.value = str;
-      inputValue.value = new Date(
+      const model: string = str;
+      const value: string = new Date(
         year,
         month,
         date,
@@ -562,9 +471,8 @@
         59,
         999
       ).toISOString();
-      props.input.model = inputModel.value;
-      props.input.value = inputValue.value;
-      rdInput.value.value = str;
+      props.input.model = model;
+      props.input.value = value;
     },
     {
       deep: true,
@@ -585,128 +493,43 @@
 </script>
 
 <style lang="scss" scoped>
-  .rd-input-component {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-content: flex-start;
-    label.rd-input-label {
+  .rd-backdrop {
+    .rd-backdrop-header {
       position: relative;
       width: 100%;
-      height: 1rem;
+      margin: 1rem 0;
       display: flex;
-      color: var(--font-color);
-      opacity: 0.5;
-      align-items: center;
-    }
-    .rd-input-container {
-      position: relative;
-      width: 100%;
-      height: 2rem;
-      background: var(--background-depth-three-color);
-      border-radius: 0.5rem;
-      display: flex;
-      .rd-input-icon-container {
+      .rd-backdrop-title {
         position: relative;
-        width: 2rem;
-        height: 2rem;
-        padding: 0 0.5rem;
-        border-top-left-radius: 0.5rem;
-        border-bottom-left-radius: 0.5rem;
-        box-sizing: border-box;
-        background: rgba(0, 0, 0, 0.05);
+        width: 100%;
+        height: 1rem;
         display: flex;
-        justify-content: center;
+        flex-shrink: 0;
         align-items: center;
       }
-      input.rd-input {
+    }
+    .rd-backdrop-body {
+      position: relative;
+      left: -1rem;
+      width: calc(100% + 2rem);
+      display: flex;
+      flex-direction: column;
+      .rd-backdrop-date-wrapper {
         position: relative;
         width: 100%;
-        height: 100%;
-        padding: 0 0.5rem;
-        border: none;
-        border-top-right-radius: 0.5rem;
-        border-bottom-right-radius: 0.5rem;
-        box-sizing: border-box;
-        color: var(--font-color);
-        background: rgba(0, 0, 0, 0);
-        display: flex;
-        transition: background-color 0.25s;
-        &::placeholder {
-          color: var(--font-color);
-          opacity: 0.5;
-          transition: opacity 0.25s;
-        }
-        &:hover {
-          outline: none;
-          background: rgba(0, 0, 0, 0);
-          &::placeholder {
-            opacity: 1;
-          }
-        }
-        &:focus {
-          outline: none;
-          background: var(--background-depth-two-color);
-        }
-        &:focus + .rd-input-border {
-          border-color: var(--primary-color);
-          &::before {
-            opacity: 0.25;
-          }
-        }
-      }
-      .rd-input-border {
-        pointer-events: none;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid rgba(0, 0, 0, 0.125);
-        box-sizing: border-box;
-        transition: 0.25s border-color, 0.25s border-width;
-        &::before {
-          content: "";
-          position: absolute;
-          top: -3px;
-          left: -3px;
-          width: calc(100% + 6px);
-          height: calc(100% + 6px);
-          border-radius: 0.5rem;
-          border: 3px solid var(--primary-color);
-          box-sizing: border-box;
-          opacity: 0;
-          transition: 0.25s opacity;
-        }
-      }
-      .rd-input-date {
-        z-index: 20000000;
-        pointer-events: none;
-        position: absolute;
-        top: 100%;
-        width: 13rem;
-        background: var(--background-depth-one-color);
-        box-shadow: var(--box-shadow);
-        opacity: 0;
-        padding: 0.5rem 0;
-        border-radius: 0.5rem;
-        box-sizing: border-box;
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        transform: scale(1.125);
-        .rd-input-date-controls-container {
+        .rd-backdrop-date-controls-container {
           position: relative;
           width: 100%;
           height: 2rem;
-          padding: 0 0.5rem;
+          padding: 0 1rem;
           box-sizing: border-box;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          .rd-input-date-controls-indicator-wrapper {
+          .rd-backdrop-date-controls-indicator-wrapper {
             position: relative;
             height: 100%;
             overflow: hidden;
@@ -714,7 +537,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: flex-start;
-            .rd-input-date-controls-indicator {
+            .rd-backdrop-date-controls-indicator {
               position: relative;
               height: 100%;
               flex-shrink: 0;
@@ -722,22 +545,22 @@
               align-items: center;
             }
           }
-          .rd-input-date-controls {
+          .rd-backdrop-date-controls {
             position: relative;
             height: 100%;
             display: flex;
           }
         }
-        .rd-input-date-days-container {
+        .rd-backdrop-date-days-container {
           position: relative;
           width: 100%;
           margin: 0.75rem 0;
-          padding: 0 0.5rem;
+          padding: 0 1rem;
           box-sizing: border-box;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          span.rd-input-date-day {
+          span.rd-backdrop-date-day {
             position: relative;
             width: 1.5rem;
             height: 1rem;
@@ -750,23 +573,23 @@
             }
           }
         }
-        .rd-input-date-weeks-wrapper {
+        .rd-backdrop-date-weeks-wrapper {
           position: relative;
           width: 100%;
           display: flex;
           flex-shrink: 0;
           justify-content: center;
-          .rd-input-date-weeks {
+          .rd-backdrop-date-weeks {
             position: relative;
             width: 100%;
             margin-top: 0.5rem;
-            padding: 0 0.5rem;
+            padding: 0 1rem;
             box-sizing: border-box;
             display: flex;
             flex-shrink: 0;
             flex-direction: column;
             justify-content: flex-start;
-            .rd-input-date-week {
+            .rd-backdrop-date-week {
               position: relative;
               width: 100%;
               height: 1.5rem;
@@ -774,7 +597,7 @@
               display: flex;
               justify-content: space-between;
               align-items: center;
-              .rd-input-date-week-day {
+              .rd-backdrop-date-week-day {
                 position: relative;
                 width: 1.5rem;
                 height: 1.5rem;
@@ -782,7 +605,7 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                .rd-input-date-week-day-overlay {
+                .rd-backdrop-date-week-day-overlay {
                   pointer-events: none;
                   position: absolute;
                   top: 0;
@@ -793,7 +616,7 @@
                   border: 1px solid var(--primary-color);
                   box-sizing: border-box;
                 }
-                span.rd-input-date-week-day-date {
+                span.rd-backdrop-date-week-day-date {
                   cursor: pointer;
                   position: relative;
                   width: 100%;
@@ -805,12 +628,12 @@
                   display: flex;
                   justify-content: center;
                   align-items: center;
-                  &.rd-input-date-week-day-date-selected {
+                  &.rd-backdrop-date-week-day-date-selected {
                     opacity: 1;
                     background: var(--primary-color);
                   }
                 }
-                span.rd-input-date-week-day-dot {
+                span.rd-backdrop-date-week-day-dot {
                   pointer-events: none;
                   position: relative;
                   width: 0.25rem;
@@ -819,7 +642,7 @@
                   background: var(--font-color);
                   opacity: 0.05;
                 }
-                &.rd-input-date-week-day-disabled {
+                &.rd-backdrop-date-week-day-disabled {
                   pointer-events: none;
                   opacity: 0.5;
                 }
@@ -830,41 +653,57 @@
             }
           }
         }
-        &.rd-input-date-opened {
-          pointer-events: all;
+      }
+      .rd-backdrop-button-wrapper {
+        position: relative;
+        width: 100%;
+        margin-top: 2rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        .rd-backdrop-button {
+          width: 100%;
         }
       }
     }
-    span.rd-input-error {
-      position: relative;
-      width: 100%;
-      height: 1rem;
-      color: var(--error-color);
-      white-space: nowrap;
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      flex-wrap: nowrap;
-      span.rd-text-wrapper {
-        overflow: visible;
-        justify-content: flex-start;
-        span.rd-text-container {
-          justify-content: flex-start;
-          transition: 0.25s transform;
-          span.rd-text {
-            transition: 0.25s transform;
+    @media only screen and (min-width: 1025px) {
+      height: 100%;
+      padding: 0 2rem;
+      .rd-backdrop-body {
+        left: -2rem;
+        width: calc(100% + 4rem);
+        height: 100%;
+        .rd-backdrop-date-wrapper {
+          .rd-backdrop-date-controls-container {
+            padding: 0 2rem;
+          }
+          .rd-backdrop-date-days-container {
+            padding: 0 2rem;
+          }
+          .rd-backdrop-date-weeks-wrapper {
+            .rd-backdrop-date-weeks {
+              padding: 0 2rem;
+            }
           }
         }
-      }
-    }
-    &.rd-input-error-active {
-      span.rd-input-error {
-        span.rd-text-wrapper {
-          span.rd-text-container {
-            transform: translateY(0);
-            span.rd-text {
-              transform: translateY(0);
-            }
+        .rd-backdrop-button-wrapper {
+          position: absolute;
+          bottom: 0;
+          width: 100%;
+          height: 6rem;
+          margin: 0;
+          padding: 2rem 2rem 2rem 2rem;
+          box-sizing: border-box;
+          flex-shrink: 0;
+          &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--border-color);
           }
         }
       }

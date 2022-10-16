@@ -313,10 +313,11 @@
         left: auto;
         bottom: 0;
         right: 0;
+        width: 20rem;
         height: 100vh;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
-        width: 20rem;
+        padding: 0;
         box-sizing: border-box;
         transform: translateX(125%);
         .rd-panel-header {
@@ -328,6 +329,7 @@
         }
         .rd-panel-body {
           padding: 0 2rem;
+          height: 100%;
         }
       }
     }

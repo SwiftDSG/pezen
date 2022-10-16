@@ -451,6 +451,7 @@
         price: data.price,
         markup_price: data.markup_price,
         image_url: data.image_url,
+        make_duration: data.make_duration,
       });
     }
   }

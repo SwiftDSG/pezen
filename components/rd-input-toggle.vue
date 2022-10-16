@@ -18,6 +18,7 @@
   const props = defineProps<{
     input: {
       model: boolean;
+      disabled?: boolean;
     };
   }>();
 
@@ -91,7 +92,6 @@
     buttonPressed.value = true;
     animate.click(props.input.model, rdInputComponent.value, () => {
       emits("clicked");
-      props.input.model = props.input.model ? true : false;
       buttonClicking.value = false;
       if (!buttonPressed.value) {
         mouseUpHandler();
@@ -105,7 +105,9 @@
     if (!buttonClicking.value) {
       animate.release(props.input.model, rdInputComponent.value, () => {
         props.input.model = !props.input.model;
-        buttonAnimating.value = false;
+        setTimeout(() => {
+          buttonAnimating.value = false;
+        }, 100);
       });
     }
   }
@@ -113,12 +115,14 @@
   watch(
     () => props.input.model,
     (val) => {
-      buttonAnimating.value = true;
-      animate.click(!val, rdInputComponent.value, () => {
-        animate.release(!val, rdInputComponent.value, () => {
-          buttonAnimating.value = false;
+      if (!buttonAnimating.value) {
+        buttonAnimating.value = true;
+        animate.click(!val, rdInputComponent.value, () => {
+          animate.release(!val, rdInputComponent.value, () => {
+            buttonAnimating.value = false;
+          });
         });
-      });
+      }
     }
   );
 </script>

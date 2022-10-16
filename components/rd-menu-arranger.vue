@@ -22,7 +22,11 @@
     >
       <div class="rd-group-header">
         <div class="rd-group-name-container">
-          <span class="rd-group-name rd-headline-4">Group #1</span>
+          <span class="rd-group-name rd-headline-4">{{
+            group.date
+              ? dateHandler(new Date(group.date))
+              : "Silahkan atur pengiriman"
+          }}</span>
         </div>
         <div class="rd-group-icon-container"></div>
       </div>
@@ -36,9 +40,34 @@
           :data-menu-id="menu._id"
           :style="j === group.items.length - 1 ? 'margin-bottom: 0' : ''"
           @drag="dragStart"
+          @change="eventHandler"
         />
       </div>
-      <div class="rd-group-footer"></div>
+      <div class="rd-group-footer">
+        <rd-input-button
+          class="rd-group-delivery-button"
+          v-if="!group.delivery"
+          label="pilih pengiriman"
+          type="secondary"
+          @clicked="emits('open-panel', group)"
+        />
+        <div v-if="group.delivery" class="rd-group-delivery">
+          <div class="rd-group-delivery-icon-container">
+            <rd-svg class="rd-groupdelivery-icon" name="home" />
+          </div>
+          <div class="rd-group-delivery-details">
+            <span class="rd-group-delivery-address rd-headline-6"
+              >Rumah udin</span
+            >
+            <span class="rd-group-delivery-name rd-caption-text">Express</span>
+          </div>
+        </div>
+        <rd-input-button-small
+          v-if="group.delivery"
+          icon="dots"
+          @clicked="emits('open-panel', group)"
+        />
+      </div>
       <div
         :class="classHandler(group.code)"
         @mouseenter="dragEnter"
@@ -82,6 +111,14 @@
   const props = defineProps<{
     data: MenuCart[];
   }>();
+  const emits = defineEmits([
+    "add",
+    "subtract",
+    "note",
+    "delete",
+    "change",
+    "open-panel",
+  ]);
 
   const rdComponent = ref<HTMLDivElement>(null);
   const rdMenuDecoy = ref<HTMLElement>(null);
@@ -103,6 +140,21 @@
   let animationScrollDir: AnimationScrollDirection = null;
   let animationScrollPos: number = 0;
   let animationGroupIndex: number = -1;
+
+  const months: string[] = [
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
+  ];
 
   const rem: ComputedRef<number> = computed(
     () => parseInt(getComputedStyle(document.documentElement)?.fontSize) || 24
@@ -140,10 +192,21 @@
       );
 
       tl.to(rdMenusAfter, {
-        y: `-=${((viewMode === "desktop" ? 1 : 0.75) + 5.5) * rem.value + 2}`,
+        y: `-=${
+          (viewMode === "desktop" ? 1 : 0.75) * rem.value +
+          rdMenu.getBoundingClientRect().height
+        }`,
         duration: 0.5,
         ease: "power2.inOut",
-      });
+      }).to(
+        rdMenu,
+        {
+          opacity: 0,
+          duration: 0.5,
+          ease: "power2.inOut",
+        },
+        "<0"
+      );
 
       if (viewMode === "mobile") {
         tl.to(
@@ -484,7 +547,10 @@
           duration: 0.5,
           ease: "power2.out",
           onComplete() {
-            groups.value[index].items.push(animationDecoy.value);
+            groups.value[index].items.push({
+              ...animationDecoy.value,
+              code: groups.value[index].code,
+            });
             animationDecoy.value = null;
 
             gsap.to(rdGroupBodyRemove, {
@@ -579,7 +645,10 @@
               duration: 0,
             });
 
-            groups.value[index].items.push(animationDecoy.value);
+            groups.value[index].items.push({
+              ...animationDecoy.value,
+              code: groups.value[index].code,
+            });
             animationDecoy.value = null;
 
             gsap.to(document.documentElement, {
@@ -726,12 +795,85 @@
       requestAnimationFrame(scrollHandler);
     }
   }
+  function eventHandler(data: {
+    name: "add" | "subtract" | "note" | "delete";
+    menu: MenuCart;
+  }): void {
+    if (
+      data.name !== "delete" &&
+      (data.name !== "subtract" || data.menu.quantity > 1)
+    ) {
+      emits(data.name, data.menu);
+    } else if (data.name !== "subtract" || data.menu.quantity <= 1) {
+      deleteHandler(data.menu);
+    }
+  }
+  function deleteHandler(data: MenuCart): void {
+    const groupRemoveIndex: number = groups.value.findIndex(
+      (a) => a.code === data.code
+    );
+    if (groupRemoveIndex > -1) {
+      const group: MenuGroup = groups.value[groupRemoveIndex];
+      console.log({ ...group });
+      const groupRemove: boolean = group.items.length === 1;
+      if (groupRemove) {
+        animate.groupRemove(
+          viewMode.value,
+          data.code,
+          rdGroup.value[groupRemoveIndex],
+          () => {
+            groups.value.splice(groupRemoveIndex, 1);
+          }
+        );
+      } else {
+        const groupItemRemoveIndex: number = group.items.findIndex(
+          (a) => a._id === data._id
+        );
+        if (groupItemRemoveIndex > -1) {
+          const rdMenuTarget: HTMLDivElement = rdGroup.value[
+            groupRemoveIndex
+          ].querySelector(`.rd-group-menu[data-menu-id='${data._id}']`);
+          animate.groupItemRemove(
+            viewMode.value,
+            data._id,
+            rdMenuTarget,
+            () => {
+              groups.value[groupRemoveIndex].items.splice(
+                groupItemRemoveIndex,
+                1
+              );
+            }
+          );
+        }
+      }
+    }
+  }
+
+  function dateHandler(data: Date): string {
+    const date: number = data.getDate();
+    const month: number = data.getMonth();
+    const year: number = data.getFullYear();
+
+    return `${date} ${months[month]} ${year}`;
+  }
+
+  watch(
+    () => groups.value,
+    (val) => {
+      emits("change", val);
+    },
+    {
+      deep: true,
+    }
+  );
 
   onMounted(() => {
     gsap.registerPlugin(ScrollToPlugin);
     for (const menu of props.data) {
+      const code: string = genRandomStr();
+      menu.code = code;
       groups.value.push({
-        code: genRandomStr(),
+        code,
         items: [menu],
       });
     }
@@ -812,6 +954,40 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        .rd-group-delivery-button {
+          width: 100%;
+        }
+        .rd-group-delivery {
+          position: relative;
+          width: calc(100% - 2.75rem);
+          height: 100%;
+          display: flex;
+          justify-content: space-between;
+          .rd-group-delivery-icon-container {
+            position: relative;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            border: var(--border);
+            padding: 0 0.5rem;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: cetner;
+          }
+          .rd-group-delivery-details {
+            position: relative;
+            width: calc(100% - 2.75rem);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            span.rd-group-delivery-name {
+              position: relative;
+              margin-top: 0.125rem;
+            }
+          }
+        }
       }
       .rd-group-overlay {
         pointer-events: none;

@@ -24,15 +24,11 @@
           <slot />
         </div>
       </div>
-      <div
-        class="rd-panel-overlay"
-        :class="loading ? 'rd-panel-overlay-active' : ''"
-      >
-        <rd-progress-bar
-          :state="loading ? 'show' : 'hide'"
-          class="rd-panel-overlay-loading"
-        />
-      </div>
+      <rd-progress-bar
+        :state="loading ? 'show' : 'hide'"
+        class="rd-panel-overlay-loading"
+        type="overlay"
+      />
     </div>
   </div>
 </template>

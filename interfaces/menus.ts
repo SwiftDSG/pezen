@@ -22,6 +22,8 @@ export interface MenuCart {
   quantity: number
   price: number
   markup_price: number
+  make_duration?: number
+  code?: string
   image_url?: string
   note?: string
   take_away?: boolean

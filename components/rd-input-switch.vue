@@ -34,14 +34,10 @@
 </template>
 
 <script lang="ts" setup>
-  import gsap from "gsap";
+  import { InputSwitchOption } from "~~/interfaces/general";
 
   const props = defineProps<{
-    input: {
-      options: [string, string];
-      model: string;
-      disabled?: boolean;
-    };
+    input: InputSwitchOption;
   }>();
 
   const rdInput = ref<HTMLInputElement>(null);

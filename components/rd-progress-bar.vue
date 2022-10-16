@@ -26,8 +26,8 @@
         pointerEvents: "auto",
         opacity: 1,
         scale: 1,
-        duration: 0.25,
-        ease: "power4.out",
+        duration: 0.5,
+        ease: "power2.inOut",
       });
     },
     exit(rdComponent: HTMLElement): void {
@@ -36,8 +36,8 @@
         pointerEvents: "none",
         opacity: 0,
         scale: 1.125,
-        duration: 0.25,
-        ease: "power4.out",
+        duration: 0.5,
+        ease: "power2.inOut",
       });
     },
   };
@@ -102,21 +102,12 @@
       height: 100%;
       padding: 0 2rem;
       border-radius: 0;
+      backdrop-filter: blur(5px);
       background: rgba(0, 0, 0, 0.25);
       opacity: 0;
       transform: scale(1) !important;
       .rd-progress-bar-outer {
         max-width: 15rem;
-      }
-      &::before {
-        z-index: 0;
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        backdrop-filter: blur(5px);
       }
     }
   }
