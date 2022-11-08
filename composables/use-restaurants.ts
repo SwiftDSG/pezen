@@ -34,7 +34,7 @@ export default function () {
   }
 
   const checkRestaurantAvailability = async (payload: { id: string, guest: number, date: number }): Promise<RestaurantDetails['tables']> => {
-    const response: Response = await $fetch(`${config.public.apiBase}/restaurants/availability/${payload.id}?guests=${payload.guest}&date=${payload.date}`, 'get')
+    const response: Response = await $fetch(`${config.public.apiBase}/restaurants/availability/${payload.id}?guests=${payload.guest && !isNaN(payload.guest) ? payload.guest : ''}&date=${payload.date}`, 'get')
 
     const result: RestaurantDetails['tables'] = await response.json()
     return result

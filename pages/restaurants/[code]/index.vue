@@ -415,7 +415,8 @@
       if (viewMode.value === "mobile") {
         str = str
           .toLowerCase()
-          .replace(/(kota)|(kabupaten)|(kab\.)|(kab)| /g, "");
+          .replace(/(kota)|(kabupaten)|(kab\.)|(kab)|/g, "")
+          .trim();
       }
     } else {
       str = restaurant.value.formatted_address[1];
@@ -560,16 +561,25 @@
 
   onMounted(async () => {
     try {
-      if (!route.query.type) {
-        router.replace({
-          query: {
-            type: "dine-in",
-          },
-        });
-      }
       restaurant.value = await getRestaurantDetails(
         route.params.code.toString()
       );
+      if (!route.query.type) {
+        if (restaurant.value.type !== "take-away") {
+          router.replace({
+            query: {
+              type: "dine-in",
+            },
+          });
+        } else {
+          router.replace({
+            query: {
+              type: "pre-order",
+            },
+          });
+        }
+      }
+
       restaurantMenus.value[restaurantMenuType.value] =
         await getRestaurantMenus(
           route.params.code.toString(),
@@ -853,6 +863,13 @@
             }
             &.rd-restaurant-detail-small {
               width: 50%;
+              span.rd-restaurant-detail-value {
+                position: relative;
+                width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
             }
             // &.rd-restaurant-detail-large {
             //   .rd-restaurant-detail-value-container {

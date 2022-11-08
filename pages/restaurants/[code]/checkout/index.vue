@@ -26,9 +26,117 @@
           @change="groupsHandler"
           @open-panel="deliveryHandler"
         />
+        <rd-menu-list
+          v-else
+          style="height: calc(100vh - 7rem)"
+          :data="cart.items"
+          @note="editNoteBackdrop"
+          @add="addQuantity"
+          @subtract="subtractQuantity"
+          @open-panel="deliveryHandler"
+        />
       </div>
     </div>
-    <div class="rd-panel"></div>
+    <div v-if="cart" class="rd-panel">
+      <div class="rd-panel-header">
+        <div class="rd-panel-status-container">
+          <div class="rd-panel-status-icon-container">
+            <rd-svg name="ellipsis" class="rd-panel-status-icon" />
+          </div>
+          <div class="rd-panel-status-details-container">
+            <span class="rd-panel-status rd-headline-5"
+              >Konfirmasi pesanan</span
+            >
+            <span class="rd-panel-status-placeholder rd-caption-text">{{
+              cart.restaurant.name
+            }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="rd-panel-body">
+        <div class="rd-panel-card">
+          <div class="rd-panel-card-header">
+            <span class="rd-panel-card-name rd-headline-5">{{
+              typeHandler(cart.method.type)
+            }}</span>
+            <div class="rd-panel-card-icon-container">
+              <rd-svg
+                class="rd-panel-card-icon"
+                :name="iconHandler(cart.method.type)"
+              />
+            </div>
+          </div>
+          <div class="rd-panel-card-body rd-panel-card-order-details">
+            <div
+              v-if="cart.method.type === 'dine-in'"
+              class="rd-panel-card-order-detail"
+            >
+              <div class="rd-panel-card-order-icon-container">
+                <rd-svg class="rd-panel-card-order-icon" name="table" />
+              </div>
+              <div class="rd-panel-card-order-details-container">
+                <span class="rd-panel-card-order-placeholder rd-caption-text"
+                  >Nomor meja</span
+                >
+                <span class="rd-panel-card-order-value rd-headline-6">{{
+                  cart.method.table || "Ambil sendiri"
+                }}</span>
+              </div>
+            </div>
+            <div
+              v-else-if="cart.method.type === 'booking'"
+              class="rd-panel-card-order-detail"
+            >
+              <div class="rd-panel-card-order-icon-container">
+                <rd-svg
+                  class="rd-panel-card-order-icon"
+                  name="account-multiple"
+                />
+              </div>
+              <div class="rd-panel-card-order-details-container">
+                <span class="rd-panel-card-order-placeholder rd-caption-text">{{
+                  cart.method.guest ? "Jumlah tamu" : "Tipe pesanan"
+                }}</span>
+                <span class="rd-panel-card-order-value rd-headline-6">{{
+                  cart.method.guest
+                    ? `${cart.method.guest} orang`
+                    : "Bawa pulang"
+                }}</span>
+              </div>
+            </div>
+            <div
+              v-else-if="cart.method.type === 'pre-order'"
+              class="rd-panel-card-order-detail"
+            >
+              <div class="rd-panel-card-order-icon-container">
+                <rd-svg class="rd-panel-card-order-icon" name="calendar" />
+              </div>
+              <div class="rd-panel-card-order-details-container">
+                <span class="rd-panel-card-order-placeholder rd-caption-text"
+                  >Jumlah kiriman</span
+                >
+                <span class="rd-panel-card-order-value rd-headline-6">{{
+                  `${cartGroupItems?.length || 0} pengiriman`
+                }}</span>
+              </div>
+            </div>
+            <div class="rd-panel-card-order-detail">
+              <div class="rd-panel-card-order-icon-container">
+                <rd-svg class="rd-panel-card-order-icon" name="food" />
+              </div>
+              <div class="rd-panel-card-order-details-container">
+                <span class="rd-panel-card-order-placeholder rd-caption-text"
+                  >Jumlah item</span
+                >
+                <span class="rd-panel-card-order-value rd-headline-6">{{
+                  `${cart.items.length} barang`
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <rd-backdrop
       v-if="backdropIndex !== -1"
       class="rd-backdrop"
@@ -172,6 +280,25 @@
     });
   }
 
+  function typeHandler(type: OrderCart["method"]["type"]): string {
+    let str: string = "";
+
+    if (type === "pre-order") str = "Pre Order";
+    else if (type === "booking") str = "Reservasi";
+    else if (type === "dine-in") str = "Dine In";
+
+    return str;
+  }
+  function iconHandler(type: OrderCart["method"]["type"]): string {
+    let str: string = "";
+
+    if (type === "pre-order") str = "calendar";
+    else if (type === "booking") str = "table-chair";
+    else if (type === "dine-in") str = "silverware";
+
+    return str;
+  }
+
   watch(
     () => cartGroupItems.value,
     (val) => {
@@ -280,9 +407,137 @@
     }
     .rd-panel {
       position: absolute;
-      bottom: 0;
+      top: calc(100% - 4rem);
       left: 0;
+      width: 100%;
+      height: 100vh;
       background: var(--background-depth-one-color);
+      display: flex;
+      flex-direction: column;
+      .rd-panel-header {
+        position: relative;
+        width: 100%;
+        height: 4rem;
+        padding: 1rem;
+        border-bottom: var(--border);
+        box-sizing: border-box;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        .rd-panel-status-container {
+          position: relative;
+          height: 2rem;
+          display: flex;
+          align-content: center;
+          .rd-panel-status-icon-container {
+            position: relative;
+            width: 2rem;
+            height: 2rem;
+            background: var(--background-depth-two-color);
+            border-radius: 0.5rem;
+            padding: 0 0.5rem;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+        }
+        .rd-panel-status-details-container {
+          position: relative;
+          height: 100%;
+          padding-left: 0.5rem;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          span.rd-panel-status-placeholder {
+            position: relative;
+            margin-top: 0.125rem;
+          }
+        }
+      }
+      .rd-panel-body {
+        position: relative;
+        width: 100%;
+        height: calc(100% - 4rem);
+        padding: 1rem;
+        overflow-y: auto;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        .rd-panel-card {
+          position: relative;
+          width: 100%;
+          border-radius: 0.75rem;
+          border: var(--border);
+          display: flex;
+          flex-direction: column;
+          .rd-panel-card-header {
+            position: relative;
+            width: 100%;
+            height: 2.75rem;
+            padding: 0.75rem 0.75rem 0 0.75rem;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            .rd-panel-card-icon-container {
+              position: relative;
+              width: 2rem;
+              height: 2rem;
+              background: var(--background-depth-two-color);
+              border-radius: 0.5rem;
+              padding: 0 0.5rem;
+              box-sizing: border-box;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+          }
+          .rd-panel-card-body {
+            position: relative;
+            width: 100%;
+            padding: 1rem 0.75rem 0.75rem 0.75rem;
+            box-sizing: border-box;
+            display: flex;
+            .rd-panel-card-order-detail {
+              position: relative;
+              width: 100%;
+              height: 2rem;
+              display: flex;
+              align-items: center;
+              .rd-panel-card-order-icon-container {
+                position: relative;
+                width: 2rem;
+                height: 2rem;
+                background: var(--background-depth-two-color);
+                border-radius: 0.5rem;
+                padding: 0 0.5rem;
+                box-sizing: border-box;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+              }
+              .rd-panel-card-order-details-container {
+                position: relative;
+                height: 100%;
+                padding-left: 0.5rem;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                span.rd-panel-card-order-placeholder {
+                  position: relative;
+                  margin-bottom: 0.125rem;
+                }
+              }
+            }
+            &.rd-panel-card-order-details {
+              justify-content: space-between;
+            }
+          }
+        }
+      }
     }
     .rd-backdrop {
       .rd-backdrop-header {
@@ -340,9 +595,7 @@
         display: flex;
         flex-direction: column;
         .rd-page-header {
-          position: fixed;
-          top: 0;
-          left: 0;
+          position: relative;
           height: 6rem;
           border-bottom: var(--border);
           background: var(--background-depth-one-color);
@@ -357,19 +610,28 @@
           }
         }
         .rd-page-body {
-          height: calc(100vh - 6rem);
-          margin-top: 6rem;
+          margin: 0;
+          height: 100%;
         }
       }
       .rd-panel {
+        z-index: 2;
         position: relative;
+        top: 0;
         width: 20rem;
         height: 100%;
-        padding: 2rem;
         border-left: var(--border);
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
+        .rd-panel-header {
+          height: 6rem;
+          padding: 2rem;
+        }
+        .rd-panel-body {
+          height: calc(100% - 6rem);
+          padding: 2rem;
+        }
       }
       .rd-backdrop {
         height: 100%;

@@ -38,6 +38,7 @@ export interface Restaurant {
   code: string
   categories: number[]
   formatted_address: string[]
+  type: 'dine-in' | 'take-away'
   distance?: number
   price_level?: number
   address?: string
